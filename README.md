@@ -1,0 +1,4 @@
+- Clone this repository on your personal laptop
+- Download ansible
+- Ensure SSH connection to a working raspberry pi (via key)
+- Run ansible playbook

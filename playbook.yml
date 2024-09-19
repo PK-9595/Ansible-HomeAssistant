@@ -1,0 +1,26 @@
+# Update system
+
+
+# Download useful CLI tools
+
+  /snap/bin to PATH
+
+# Allow connection to wifi on startup (needs a conditional)
+
+
+# Export certain environment variables for user preference, including .bash_profile & .bashrc
+
+
+# New User Setup
+
+
+# SSH Setup (Should already be done?)
+
+
+# rdp setup
+
+
+# docker setup
+
+
+# home assistant setup

@@ -1,0 +1,69 @@
+version: '3' # Docker compose file format version
+services:
+  homeassistant:
+    container_name: homeAssistant
+    image: ${HOMEASSISTANT_IMAGE}
+    volumes:
+      - /home/${USER}/homeAssistant:/config
+      - /run/dbus:/run/dbus:ro
+    environment:
+      - TZ=Asia/Singapore
+    network_mode: host # Shares the host's network stack, uses the host's IP address. 
+    restart: unless-stopped
+    privileged: true
+
+  mosquitto: # Zigbee2MQTT Broker
+    container_name: mosquitto-HA
+    image: ${MOSQUITTO_IMAGE}
+    ports:
+      - "1883:1883" # Forward port 1883 on the host to port 1883 on the container.
+    volumes:
+      - /home/${USER}/mosquitto/config:/mosquitto/config
+      - /home/${USER}/mosquitto/data:/mosquitto/data
+      - /home/${USER}/mosquitto/log:/mosquitto/log
+    restart: unless-stopped
+
+  nodered: # Visual automation tool for creating smart home workflows.
+    container_name: nodered-HA
+    image: ${NODERED_IMAGE}
+    ports:
+      - "1880:1880" # Forward port 1880 on the host to port 1880 on the container.
+    volumes:
+      - /home/${USER}/nodered:/data
+    restart: unless-stopped
+
+  esphome: # Tool to create firmware for ESP8266 and ESP32 microcontrollers (DIY smart devices).
+    container_name: esphome-HA
+    image: ${ESPHOME_IMAGE}
+    ports:
+      - "6052:6052" # Forward port 6052 on the host to port 6052 on the container.
+    volumes:
+      - /home/${USER}/esphome:/config
+    restart: unless-stopped
+
+  mariadb: # RDBMS - Better performance and scalability than SQLite
+    container_name: mariadb-HA
+    image: ${MARIADB_IMAGE}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=homeAssistant
+      - MYSQL_USER=homeAssistant
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - /home/$USER/mariadb:/var/lib/mysql
+    ports:
+      - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
+    restart: unless-stopped
+
+  samba: # File sharing tool to share files via SMB/CIFS protocol.
+    container_name: samba-HA
+    image: ${SAMBA_IMAGE}
+    environment:
+      - USERID=${USERID} # Runs process in the container (sharing of files) with this UID.
+      - GROUPID=${GROUPID} # Runs process in the container (sharing of files) with this GID.
+    volumes:
+      - /home/${USER}/homeAssistant:/share:ro # Shares the homeAssistant /config directory via the browser UI. Read-Only.
+    ports:
+      - "139:139" # Forward port 139 on the host to port 139 on the container.
+      - "445:445" # Forward port 445 on the host to port 445 on the container.
+    restart: unless-stopped

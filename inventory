@@ -1,0 +1,8 @@
+all: 
+
+ hosts: 
+
+   raspberryPi: 
+     ansible_host: raspberrypi # Raspberry Pi IP/Hostname
+     ansible_user: homeAdmin # User to log in to the raspberry pi as.
+     ansible_ssh_private_key_file: ~/.ssh/id_ed25519_raspberryPi # Location of SSH private key file
