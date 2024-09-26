@@ -35,7 +35,7 @@
         line: 'PasswordAuthentication no'
         state: present
         backup: yes
-        register: disable_password_auth
+      register: disable_password_auth
 
     - name: Ensure public key authentication is enabled in sshd_config
       ansible.builtin.lineinfile:
@@ -43,13 +43,13 @@
         regexp: '^#?PubkeyAuthentication'
         line: 'PubkeyAuthentication yes'
         state: present
-        register: enable_pubkey_auth
+      register: enable_pubkey_auth
 
     - name: Reload SSH to apply configuration changes
       ansible.builtin.service:
         name: ssh
         state: reloaded
-        when: disable_password_auth.changed or enable_pubkey_auth.changed
+      when: disable_password_auth.changed or enable_pubkey_auth.changed
 
 # Update System & Install Useful Packages
 - name: Update OS and Install Useful CLI Tools on Debian-Based Systems
@@ -154,9 +154,9 @@
         insertbefore: BOF
         state: present
       loop:
-        - { line: 'export PATH=$PATH:/snap/bin', regexp: '^export PATH=$PATH:/snap/bin$'}
-        - { line: 'export EDITOR=vim', regexp: '^export EDITOR=vim$'}
-        - { line: 'export VISUAL=vim', regexp: '^export VISUAL=vim$'}
+        - { line: 'export PATH=${PATH}:/snap/bin;', regexp: '^export PATH=${PATH}:/snap/bin;$'}
+        - { line: 'export EDITOR=vim;', regexp: '^export EDITOR=vim;$'}
+        - { line: 'export VISUAL=vim;', regexp: '^export VISUAL=vim;$'}
 
     - name: Get ~/.bash_profile to source from ~/.bashrc
       ansible.builtin.lineinfile:
