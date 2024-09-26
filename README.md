@@ -17,5 +17,9 @@ Ensure SSH connection to a selected user on a working raspberry pi / linux serve
 - Download ansible on your personal laptop
 - Clone this repository on your personal laptop, then enter the project directory
 - Edit variables saved in .env.example accordingly and rename the file to .env
-- Load environment variables from .env (run `bash /load_env.sh`)
+- Load environment variables from .env (run `source load_env.sh`)
 - Run ansible playbook `ansible-playbook -i inventory playbook.yml` 
+
+
+TROUBLESHOOTING:
+- If there are issues resolving the hostname, enter the IP address instead of the hostname

@@ -35,6 +35,7 @@
         line: 'PasswordAuthentication no'
         state: present
         backup: yes
+        register: disable_password_auth
 
     - name: Ensure public key authentication is enabled in sshd_config
       ansible.builtin.lineinfile:
@@ -42,11 +43,13 @@
         regexp: '^#?PubkeyAuthentication'
         line: 'PubkeyAuthentication yes'
         state: present
+        register: enable_pubkey_auth
 
     - name: Reload SSH to apply configuration changes
       ansible.builtin.service:
         name: ssh
         state: reloaded
+        when: disable_password_auth.changed or enable_pubkey_auth.changed
 
 # Update System & Install Useful Packages
 - name: Update OS and Install Useful CLI Tools on Debian-Based Systems
@@ -116,7 +119,7 @@
         state: present
 
 # Prevent rfkill from blocking wifi on startup - common on raspberry pi
-- name: Allow wifi on start - insert 'rfkill unblock wifi' into /etc/rc.local
+- name: Allow wifi/bluetooth on start - insert 'rfkill unblock wifi' into /etc/rc.local
   hosts: all
   become: true
   any_errors_fatal: true # Stop entire playbook if this play fails
@@ -125,8 +128,17 @@
     - name: Add 'rfkill unblock wifi' before 'exit 0' in /etc/rc.local file
       ansible.builtin.lineinfile:
         path: /etc/rc.local
-        insertafter: '^exit 0'
-        line: 'rfkill unblock wifi'
+        regexp: '^rfkill unblock wifi;$'
+        insertbefore: '^exit 0'
+        line: 'rfkill unblock wifi;'
+        create: no
+
+    - name: Add 'rfkill unblock bluetooth' before 'exit 0' in /etc/rc.local file
+      ansible.builtin.lineinfile:
+        path: /etc/rc.local
+        regexp: '^rfkill unblock bluetooth;$'
+        insertbefore: '^exit 0'
+        line: 'rfkill unblock bluetooth;'
         create: no
 
 # Configure environment for user preference
@@ -137,19 +149,21 @@
     - name: Configure default editor and visual text editor and add /snap/bin to PATH in ~/.bashrc
       ansible.builtin.lineinfile:
         path: /home/{{ansible_user}}/.bashrc
-        line: "{{ item }}"
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp }}"
         insertbefore: BOF
         state: present
       loop:
-        - 'export PATH=$PATH:/snap/bin'
-        - 'export EDITOR=vim'
-        - 'export VISUAL=vim'
+        - { line: 'export PATH=$PATH:/snap/bin', regexp: '^export PATH=$PATH:/snap/bin$'}
+        - { line: 'export EDITOR=vim', regexp: '^export EDITOR=vim$'}
+        - { line: 'export VISUAL=vim', regexp: '^export VISUAL=vim$'}
 
     - name: Get ~/.bash_profile to source from ~/.bashrc
       ansible.builtin.lineinfile:
         path: /home/{{ansible_user}}/.bash_profile
-        lines: 'source .bashrc'
-        insertbefore: BOF
+        regexp: '^source .bashrc$'
+        line: 'source .bashrc'
+        insertafter: BOF
         state: present
 
     - name: Change default shell for user to bash
