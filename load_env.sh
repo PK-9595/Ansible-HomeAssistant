@@ -1,2 +1,2 @@
-#!/bin/bash
-export $(grep -v '^#' ../.env | xargs)
+#!/usr/bin/env bash
+export $(grep -v '^#' .env | xargs)
