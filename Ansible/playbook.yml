@@ -1,0 +1,180 @@
+---
+# Install python so ansible can run using its other modules
+- name: Install python using raw module
+  hosts: all
+  become: true
+  gather_facts: false
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Check OS
+      raw: cat /etc/os-release # Store OS information in a variable to use in subsequent tasks
+      register: os_release
+      changed_when: false
+      failed_when: "'Debian' not in os_release.stdout and 'Ubuntu' not in os_release.stdout and 'Raspbian' not in os_release.stdout"
+
+    - name: Check if python is installed
+      raw: python3 --version
+      register: python_check
+      changed_when: false
+
+    - name: Install python using raw module
+      raw: apt update && apt install python3 -y
+      when: python_check.rc != 0
+
+# Disable password based SSH for security reasons
+- name: Disable password authentication for SSH, and use public key authentication instead
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Ensure password authentication is disabled in /etc/ssh/sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+        backup: yes
+
+    - name: Ensure public key authentication is enabled in sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        state: present
+
+    - name: Reload SSH to apply configuration changes
+      ansible.builtin.service:
+        name: ssh
+        state: reloaded
+
+# Update System & Install Useful Packages
+- name: Update OS and Install Useful CLI Tools on Debian-Based Systems
+  hosts: all
+  become: true
+  when: ansible_os_family == "Debian" # Check if the system is Debian-based
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all installed packages
+      ansible.builtin.apt:
+        upgrade: full
+        force_apt_get: yes
+
+    - name: Remove unused packages
+      ansible.builtin.apt:
+        autoremove: yes
+
+    - name: Install network-manager package
+      ansible.builtin.apt:
+        name: network-manager
+        state: present
+
+    - name: Install snapd package
+      ansible.builtin.apt:
+        name: snapd
+        state: present
+
+    - name: Install btop CLI tool using snap
+      community.general.snap:
+        name: btop
+        state: present
+      environment:
+        PATH: "{{ ansible_env.PATH }}:/snap/bin"
+
+    - name: Install tree CLI tool
+      ansible.builtin.apt:
+        name: tree
+        state: present
+
+    - name: Install fzf CLI tool
+      ansible.builtin.apt:
+        name: fzf
+        state: present
+
+    - name: Install tldr CLI tool
+      ansible.builtin.apt:
+        name: tldr
+        state: present
+
+    - name: Install neovim package
+      ansible.builtin.apt:
+        name: neovim
+        state: present
+
+    - name: Install neofetch package
+      ansible.builtin.apt:
+        name: neofetch
+        state: present
+
+    - name: Install rdp
+      ansible.builtin.apt:
+        name: xrdp
+        state: present
+
+# Prevent rfkill from blocking wifi on startup - common on raspberry pi
+- name: Allow wifi on start - insert 'rfkill unblock wifi' into /etc/rc.local
+  hosts: all
+  become: true
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Add 'rfkill unblock wifi' before 'exit 0' in /etc/rc.local file
+      ansible.builtin.lineinfile:
+        path: /etc/rc.local
+        insertafter: '^exit 0'
+        line: 'rfkill unblock wifi'
+        create: no
+
+# Configure environment for user preference
+- name: Configure User Environment
+  hosts: all
+  tasks:
+
+    - name: Configure default editor and visual text editor and add /snap/bin to PATH in ~/.bashrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ansible_user}}/.bashrc
+        line: "{{ item }}"
+        insertbefore: BOF
+        state: present
+      loop:
+        - 'export PATH=$PATH:/snap/bin'
+        - 'export EDITOR=vim'
+        - 'export VISUAL=vim'
+
+    - name: Get ~/.bash_profile to source from ~/.bashrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ansible_user}}/.bash_profile
+        lines: 'source .bashrc'
+        insertbefore: BOF
+        state: present
+
+    - name: Change default shell for user to bash
+      ansible.builtin.user:
+        name: "{{ansible_user}}"
+        shell: /bin/bash
+
+# Setup RDP
+- name: Setup RDP
+  hosts: all
+  tasks:
+    - name: Enable and start xrdp service
+      ansible.builtin.systemd:
+        name: xrdp
+        enabled: true
+        state: started
+
+# docker setup
+
+
+# home assistant setup using docker
+
+  # Need to create a config file for mosquitto also
+  # Need to create a configuration.yaml file for zigbee2mqtt also
+
+
+# Includes tasks vs roles

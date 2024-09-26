@@ -5,23 +5,42 @@ services:
     image: ${HOMEASSISTANT_IMAGE}
     volumes:
       - /home/${USER}/homeAssistant:/config
+      - /etc/localtime:/etc/localtime:ro
       - /run/dbus:/run/dbus:ro
-    environment:
-      - TZ=Asia/Singapore
-    network_mode: host # Shares the host's network stack, uses the host's IP address. 
-    restart: unless-stopped
     privileged: true
+    restart: unless-stopped
+    network_mode: host # Shares the host's network stack, uses the host's IP address. 
+
+  zigbee2MQTT: # Communicates with zigbee devices via the zigbee dongle
+    container_name: zigbee2mqtt-HA
+    image: ${ZIGBEE2MQTT_IMAGE}
+    ports:
+      - 8080:8080
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /home/${USER}/zigbee2mqtt/data:/app/data
+    privileged: true
+    devices:
+      - ${ZIGBEE_DONGLE}:${ZIGBEE_DONGLE}
+    restart: unless-stopped
+    networks:
+      - ha-network
 
   mosquitto: # Zigbee2MQTT Broker
     container_name: mosquitto-HA
     image: ${MOSQUITTO_IMAGE}
     ports:
       - "1883:1883" # Forward port 1883 on the host to port 1883 on the container.
+      - "9001:9001" # Forward port 9001 on the host to port 9001 on the container.
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/mosquitto/config:/mosquitto/config
       - /home/${USER}/mosquitto/data:/mosquitto/data
       - /home/${USER}/mosquitto/log:/mosquitto/log
+    user: ${USERID}:${GROUPID}  # Not yet tested if this works, OPTIONAL
     restart: unless-stopped
+    networks:
+      - ha-network
 
   nodered: # Visual automation tool for creating smart home workflows.
     container_name: nodered-HA
@@ -29,8 +48,12 @@ services:
     ports:
       - "1880:1880" # Forward port 1880 on the host to port 1880 on the container.
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/nodered:/data
+    user: ${USERID}:${GROUPID} # Not yet tested if this works, OPTIONAL, else need change some permissions for the host system mount point
     restart: unless-stopped
+    networks:
+      - ha-network
 
   esphome: # Tool to create firmware for ESP8266 and ESP32 microcontrollers (DIY smart devices).
     container_name: esphome-HA
@@ -38,8 +61,12 @@ services:
     ports:
       - "6052:6052" # Forward port 6052 on the host to port 6052 on the container.
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/esphome:/config
+    user: ${USERID}:${GROUPID} # Not yet tested if this works, OPTIONAL
     restart: unless-stopped
+    networks:
+      - ha-network
 
   mariadb: # RDBMS - Better performance and scalability than SQLite
     container_name: mariadb-HA
@@ -50,7 +77,9 @@ services:
       - MYSQL_USER=homeAssistant
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
-      - /home/$USER/mariadb:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /home/${USER}/mariadb:/var/lib/mysql
+    user: ${USERID}:${GROUPID} # Not yet tested if this works, OPTIONAL
     ports:
       - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
     restart: unless-stopped
@@ -62,8 +91,15 @@ services:
       - USERID=${USERID} # Runs process in the container (sharing of files) with this UID.
       - GROUPID=${GROUPID} # Runs process in the container (sharing of files) with this GID.
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/homeAssistant:/share:ro # Shares the homeAssistant /config directory via the browser UI. Read-Only.
+    privileged: true
     ports:
       - "139:139" # Forward port 139 on the host to port 139 on the container.
       - "445:445" # Forward port 445 on the host to port 445 on the container.
     restart: unless-stopped
+    networks:
+      - ha-network
+
+networks:
+  ha-network:

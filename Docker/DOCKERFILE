@@ -1,1 +1,5 @@
 FROM ghcr.io/home-assistant/home-assistant:stable as BUILD_IMAGE
+
+# This file is not yet in use
+# Can set the configuration.yaml here? To link mosquitto and mariadb?
+# Can set up HACS here?
