@@ -52,7 +52,6 @@
 - name: Update OS and Install Useful CLI Tools on Debian-Based Systems
   hosts: all
   become: true
-  when: ansible_os_family == "Debian" # Check if the system is Debian-based
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
