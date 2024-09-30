@@ -259,7 +259,7 @@
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
   
-    - name: Set up homeAssistant directory # Check if it'll be automatic
+    - name: Set up homeAssistant directory # Check if it'll be automatic, guess not
 
     - name: Set up zigbee2mqtt directory
 
