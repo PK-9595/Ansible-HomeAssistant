@@ -253,20 +253,32 @@
         image: hello-world
         state: started
 
+- name: Setup Home Assistant Required Directories
+  hosts: all
+  become: true
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+  
+    - name: Set up homeAssistant directory # Check if it'll be automatic
 
-        # - `curl -fsSL [https://get.docker.com](https://get.docker.com/) -o [get-docker.sh](http://get-docker.sh/)`
-        # - `sudo sh [get-docker.sh](http://get-docker.sh/)`
-        # - `sudo curl -L "https://github.com/docker/compose/releases/download/v2.13.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose`
-        # - `sudo chmod +x /usr/local/bin/docker-compose`
-        # - `sudo usermod -aG docker $USER`
-        # - `sudo systemctl enable docker`
-        # - `sudo systemctl start docker`
-        # - `docker run hello-world`
+    - name: Set up zigbee2mqtt directory
 
-# home assistant setup using docker
+    - name: Set up mosquitto directory
 
-  # Need to create a config file for mosquitto also
-  # Need to create a configuration.yaml file for zigbee2mqtt also
+    - name: Set up mariadb directory
+
+    - name: Set up nodered directory
+
+    - name: Set up esphome directory
+
+
+    # Need to create a config file for mosquitto also
+  
+    # Need to create a configuration.yaml file for zigbee2mqtt also
+  
+  # run docker-compose with explicit .env file
+    # docker-compose --env-file ../.env up -d
+
 
 
 # Includes tasks vs roles
