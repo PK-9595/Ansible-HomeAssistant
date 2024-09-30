@@ -21,5 +21,8 @@ Ensure SSH connection to a selected user on a working raspberry pi / linux serve
 - Load environment variables from .env & run the ansible playbook (just run `source load_env.sh`)
 
 
+- Connect to the mosquitto broker - No longer supported via YAML > use the UI instead
+- Add xiaomi miot integration through the UI as well
+
 TROUBLESHOOTING:
 - If there are issues resolving the hostname, enter the IP address instead of the hostname

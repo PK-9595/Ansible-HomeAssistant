@@ -253,32 +253,183 @@
         image: hello-world
         state: started
 
-- name: Setup Home Assistant Required Directories
+- name: Setup Home Assistant Required Directories & Files
+  hosts: all
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+  
+    # Docker & Variable Files
+    - name: Copy docker-compose file and .env files into home directory
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0644'
+      loop:
+        - {src: "{{ playbook_dir }}/../Docker/docker-compose.yml", dest: "/home/{{ ansible_user }}"}
+        - {src: "{{ playbook_dir }}/../.env", dest: "/home/{{ ansible_user }}"}
+
+    # Home Assistant Files & Directories
+    - name: Set up homeAssistant directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/automations", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scripts", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scenes", state: "directory"}
+
+    # Zigbee2MQTT Files & Directories
+    - name: Set up zigbee2mqtt directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data", state: "directory"}
+
+    # Mosquitto Files & Directories
+    - name: Set up mosquitto directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/mosquitto/config", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
+
+    # Mariadb Files & Directories
+    - name: Set up mariadb directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./mariadb", state: "directory"}
+
+    # NodeRed Files & Directories
+    - name: Set up nodered directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./nodered", state: "directory"}
+
+    # ESPHome Files & Directories
+    - name: Set up esphome directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./esphome", state: "directory"}
+
+  
+- name: Start and stop containers to initialize home assistant config files
+  hosts: all
+  become: false
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Use docker-compose up
+      ansible.builtin.shell: "docker-compose --env-file .env up -d"
+      args:
+        chdir: "/home/{{ ansible_user }}"
+
+    - name: Wait for configuration files to be initialized
+      ansible.builtin.wait_for:
+        path: "{{ item.path }}"
+        state: "{{ item.state | default('present')}}"
+        timeout: "{{ item.timeout | default('300')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"}
+        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml"}
+
+    - name: Use docker-compose down
+      ansible.builtin.shell: "docker-compose down"
+
+
+- name: Amend home assistant configuration
   hosts: all
   become: true
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
-  
-    - name: Set up homeAssistant directory # Check if it'll be automatic
 
-    - name: Set up zigbee2mqtt directory
+    # Mosquitto configuration files
+    - name: Ensure listener line & allow_anonymous line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {line: "listener 1883 0.0.0.0"}
+        - {line: "allow_anonymous true"}
 
-    - name: Set up mosquitto directory
+    # Zigbee2MQTT configuration files
+    - name: Use correct zigbee dongle device file & set extra metadata (for home assistant) to be published in messages
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {regex: '^\s*port: /dev/tty', line: "  port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"}
+        - {regex: '^\s*homeassistant:', line: "homeassistant: true # Publishes messages with extra metadata compatible with home assistant"}
+        - {regex: '^\s*server:', line: "  server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"}
 
-    - name: Set up mariadb directory
+    # HomeAssistant configuration files
+    - name: Set configuration for homeAssistant
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {regex: '^\s*automation:', line: "automation: !include_dir_merge_list automations/"}
+        - {regex: '^\s*script:', line: "script: !include_dir_merge_list scripts/"}
+        - {regex: '^\s*scene:', line: "scene: !include_dir_merge_list scenes/"}
+        
+    - name: Add Xiaomi Miot integration 
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
+        block: |
+          # Add xiaomi miot integration
+          shell_command:
+            update_xiaomi_miot: |-
+              wget -O - https://get.hacs.vip | DOMAIN=xiaomi_miot bash -
+        insertafter: EOF
 
-    - name: Set up nodered directory
 
-    - name: Set up esphome directory
+- name: Setup HACS for home assistant # HACS installation script does some finding of the correct working directory
+  hosts: all
+  any_errors_fatal: true
+  tasks:
+
+    - name: Check if HACS is already installed
+      ansible.builtin.stat:
+        path: /home/{{ ansible_user }}/homeAssistant/config/custom_components/hacs
+      register: hacs_installed
+
+    - name: Download HACS if it's not yet installed
+      when: not hacs_installed.stat.exists
+      ansible.builtin.shell: "wget -O - https://get.hacs.xyz | bash -"
+      args:
+        chdir: "/home/{{ ansible_user }}/homeAssistant"
 
 
-    # Need to create a config file for mosquitto also
-  
-    # Need to create a configuration.yaml file for zigbee2mqtt also
-  
-  # run docker-compose with explicit .env file
-    # docker-compose --env-file ../.env up -d
+- name: Start docker containers and run home assistant # Final Play
+  hosts: all
+  become: false
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
 
-
+    - name: Use docker-compose up
+      ansible.builtin.shell: "docker-compose --env-file .env up -d"
+      args:
+        chdir: "/home/{{ ansible_user }}"
 
 # Includes tasks vs roles
