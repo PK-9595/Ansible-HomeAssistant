@@ -15,10 +15,10 @@ Ensure SSH connection to a selected user on a working raspberry pi / linux serve
     - Add the private key to your ssh agent `ssh-add privKeyFilePath`
     - Copy the public key over to your raspberry pi/linux server's authorized_keys file `ssh-copy-id -i pubKeyFilePath username@hostname` when username and hostname refers to the user previously created in your raspberry pi/linux server, and the name of the server.
 - Download ansible on your personal laptop
+- Run `ansible-galaxy collection install community.docker`
 - Clone this repository on your personal laptop, then enter the project directory
 - Edit variables saved in .env.example accordingly and rename the file to .env
-- Load environment variables from .env (run `source load_env.sh`)
-- Run ansible playbook `ansible-playbook -i inventory playbook.yml` 
+- Load environment variables from .env & run the ansible playbook (just run `source load_env.sh`)
 
 
 TROUBLESHOOTING:
