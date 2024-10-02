@@ -253,28 +253,85 @@
         image: hello-world
         state: started
 
-- name: Setup Home Assistant Required Directories
+- name: Setup Home Assistant Required Directories & Files
   hosts: all
   become: true
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
   
-    - name: Set up homeAssistant directory # Check if it'll be automatic, guess not
+    # Home Assistant Files & Directories
+    - name: Set up homeAssistant directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
 
+    # - name: Add lines into homeAssistant configuration file
+
+    # Zigbee2MQTT Files & Directories
     - name: Set up zigbee2mqtt directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data", state: "directory"}
 
+    #- name: Find zigbee receiver device file
+
+    # Mosquitto Files & Directories
     - name: Set up mosquitto directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/mosquitto/config", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
 
+    - name: Ensure listener line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: 'listener 1883 0.0.0.0'
+        state: present
+
+    - name: Ensure allow_anonymous line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: 'allow_anonymous true'
+        state: present
+
+    # Mariadb Files & Directories
     - name: Set up mariadb directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./mariadb", state: "directory"}
 
+    # NodeRed Files & Directories
     - name: Set up nodered directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./nodered", state: "directory"}
 
+    # ESPHome Files & Directories
     - name: Set up esphome directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./esphome", state: "directory"}
 
-
-    # Need to create a config file for mosquitto also
-  
-    # Need to create a configuration.yaml file for zigbee2mqtt also
   
   # run docker-compose with explicit .env file
     # docker-compose --env-file ../.env up -d
