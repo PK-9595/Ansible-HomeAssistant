@@ -268,8 +268,6 @@
       loop:
         - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
 
-    # - name: Add lines into homeAssistant configuration file
-
     # Zigbee2MQTT Files & Directories
     - name: Set up zigbee2mqtt directory
       ansible.builtin.file:
@@ -278,8 +276,6 @@
         mode: "{{ item.mode | default('0755')}}"
       loop:
         - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data", state: "directory"}
-
-    #- name: Find zigbee receiver device file
 
     # Mosquitto Files & Directories
     - name: Set up mosquitto directory
@@ -292,18 +288,6 @@
         - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
         - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
         - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
-
-    - name: Ensure listener line is present in mosquitto.conf file
-      ansible.builtin.lineinfile:
-        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
-        line: 'listener 1883 0.0.0.0'
-        state: present
-
-    - name: Ensure allow_anonymous line is present in mosquitto.conf file
-      ansible.builtin.lineinfile:
-        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
-        line: 'allow_anonymous true'
-        state: present
 
     # Mariadb Files & Directories
     - name: Set up mariadb directory
@@ -333,8 +317,33 @@
         - {path: "./esphome", state: "directory"}
 
   
-  # run docker-compose with explicit .env file
-    # docker-compose --env-file ../.env up -d
+# Run docker-compose with explicit .env file and shut it down to initialize home assistant config files 
+  # docker-compose --env-file ../.env up -d
+  # docker-compose down
+
+
+- name: Amend home assistant configuration
+  hosts: all
+  become: true
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Ensure listener line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: 'listener 1883 0.0.0.0'
+        state: present
+
+    - name: Ensure allow_anonymous line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: 'allow_anonymous true'
+        state: present
+
+    #- name: Find zigbee receiver device file
+
+    #- name: Add lines into homeAssistant configuration file
+
 
 
 
