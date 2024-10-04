@@ -255,7 +255,6 @@
 
 - name: Setup Home Assistant Required Directories & Files
   hosts: all
-  become: true
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
   
@@ -332,7 +331,7 @@
   
 - name: Start and stop containers to initialize home assistant config files
   hosts: all
-  become: true
+  become: false
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
@@ -411,7 +410,7 @@
 
 - name: Start docker containers and run home assistant # Final Play
   hosts: all
-  become: true
+  become: false
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
