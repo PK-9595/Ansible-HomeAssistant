@@ -277,6 +277,9 @@
         mode: "{{ item.mode | default('0755')}}"
       loop:
         - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/automations", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scripts", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scenes", state: "directory"}
 
     # Zigbee2MQTT Files & Directories
     - name: Set up zigbee2mqtt directory
@@ -357,6 +360,7 @@
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
+    # Mosquitto configuration files
     - name: Ensure listener line is present in mosquitto.conf file
       ansible.builtin.lineinfile:
         path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
@@ -369,11 +373,60 @@
         line: 'allow_anonymous true'
         state: present
 
-    #- name: Find zigbee receiver device file
+    # Zigbee2MQTT configuration files
+    - name: Use correct zigbee dongle device file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
+        regex: '^\s*port: /dev/tty'
+        line: "port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"
+        state: present
 
-    #- name: Add lines into homeAssistant configuration file
+    - name: Set extra metadata for home assistant integration to be added in mqtt messages
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
+        line: "homeassistant: true # Publishes messages with extra metadata compatible with home assistant"
+        state: present
 
+    - name: Set the MQTT server to publish messages to
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
+        regex: '^\s*server:'
+        line: "server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"
+        state: present
 
+    # HomeAssistant configuration files
+    - name: Set configuration for homeAssistant
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {regex "^\s*automation:", line: "automation: !include_dir_merge_list automations/"}
+        - {regex "^\s*script:", line: "script: !include_dir_merge_list scripts/"}
+        - {regex "^\s*scene:", line: "scene: !include_dir_merge_list scenes/"}
+        
+    - name: Add Xiaomi Miot integration 
+      ansible.builtin.blockinfile:
+        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
+        block: |
+          # Add xiaomi miot integration
+          shell_command:
+            update_xiaomi_miot: |-
+              wget -O - https://get.hacs.vip | DOMAIN=xiaomi_miot bash -
+        insertafter: EOF
 
+  # setup HACS
+
+- name: Start docker containers and run home assistant # Final Play
+  hosts: all
+  become: true
+  any_errors_fatal: true # Stop entire playbook if this play fails
+  tasks:
+
+    - name: Use docker-compose up
+      ansible.builtin.shell: "docker-compose up -d"
+      args:
+        chdir: "/home/{{ ansible_user }}"
 
 # Includes tasks vs roles
