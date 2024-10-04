@@ -337,7 +337,7 @@
   tasks:
 
     - name: Use docker-compose up
-      ansible.builtin.shell: "docker-compose up -d"
+      ansible.builtin.shell: "docker-compose --env-file .env up -d"
       args:
         chdir: "/home/{{ ansible_user }}"
 
@@ -416,7 +416,7 @@
   tasks:
 
     - name: Use docker-compose up
-      ansible.builtin.shell: "docker-compose up -d"
+      ansible.builtin.shell: "docker-compose --env-file .env up -d"
       args:
         chdir: "/home/{{ ansible_user }}"
 
