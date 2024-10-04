@@ -378,9 +378,9 @@
         line: "{{ item.line }}"
         state: "{{ item.state | default('present') }}"
       loop:
-        - {regex: '^\s*port: /dev/tty', line: "port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"}
+        - {regex: '^\s*port: /dev/tty', line: "  port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"}
         - {regex: '^\s*homeassistant:', line: "homeassistant: true # Publishes messages with extra metadata compatible with home assistant"}
-        - {regex: '^\s*server:', line: "server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"}
+        - {regex: '^\s*server:', line: "  server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"}
 
     # HomeAssistant configuration files
     - name: Set configuration for homeAssistant
