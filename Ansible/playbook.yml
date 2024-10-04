@@ -390,9 +390,9 @@
         line: "{{ item.line }}"
         state: "{{ item.state | default('present') }}"
       loop:
-        - {regex: "^\s*automation:", line: "automation: !include_dir_merge_list automations/"}
-        - {regex: "^\s*script:", line: "script: !include_dir_merge_list scripts/"}
-        - {regex: "^\s*scene:", line: "scene: !include_dir_merge_list scenes/"}
+        - {regex: '^\s*automation:', line: "automation: !include_dir_merge_list automations/"}
+        - {regex: '^\s*script:', line: "script: !include_dir_merge_list scripts/"}
+        - {regex: '^\s*scene:', line: "scene: !include_dir_merge_list scenes/"}
         
     - name: Add Xiaomi Miot integration 
       ansible.builtin.blockinfile:
