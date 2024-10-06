@@ -403,10 +403,23 @@
               wget -O - https://get.hacs.vip | DOMAIN=xiaomi_miot bash -
         insertafter: EOF
 
-  # setup HACS
-    #
-    #
-    #
+
+- name: Setup HACS for home assistant
+  hosts: all
+  any_errors_fatal: true
+  tasks:
+
+    - name: Check if HACS is already installed
+      ansible.builtin.stat:
+        path: /home/{{ ansible_user }}/homeAssistant/config/custom_components/hacs
+      register: hacs_installed
+
+    - name: Download HACS if it's not yet installed
+      when: not hacs_installed.stat.exists
+      ansible.builtin.shell: "wget -O - https://get.hacs.xyz | bash -"
+      args:
+        chdir: "/home/{{ ansible_user }}/homeAssistant"
+
 
 - name: Start docker containers and run home assistant # Final Play
   hosts: all
