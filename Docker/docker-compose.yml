@@ -68,7 +68,7 @@ services:
     networks:
       - ha-network
 
-  mariadb: # RDBMS - Better performance and scalability than SQLite
+  mariadb: # RDBMS - Better performance and scalability than SQLite. Initialization tasks are performed as root within the container
     container_name: mariadb-HA
     image: ${MARIADB_IMAGE}
     environment:
@@ -79,7 +79,6 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/mariadb:/var/lib/mysql
-    user: ${USERID}:${GROUPID} # Not yet tested if this works, OPTIONAL
     ports:
       - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
     restart: unless-stopped

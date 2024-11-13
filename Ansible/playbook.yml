@@ -220,6 +220,10 @@
         dest: /tmp/docker-compose
         mode: '0755'
         force: true # Always download even if already present
+      register: download_result
+      retries: 2
+      delay: 5 # 5 seconds delay
+      until: download_result.msg.startswith('OK') # Meaning that the download is successful
 
     - name: Check If Docker Compose Binary Is Different
       ansible.builtin.command:
@@ -301,15 +305,6 @@
         - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
         - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
 
-    # Mariadb Files & Directories
-    - name: Set up mariadb directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "./mariadb", state: "directory"}
-
     # NodeRed Files & Directories
     - name: Set up nodered directory
       ansible.builtin.file:
@@ -328,6 +323,17 @@
       loop:
         - {path: "./esphome", state: "directory"}
 
+    # Mariadb Files & Directories
+    - name: Set up mariadb directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - {path: "./mariadb", state: "directory"}
+      become: true
   
 - name: Start and stop containers to initialize home assistant config files
   hosts: all
@@ -412,7 +418,7 @@
 
     - name: Check if HACS is already installed
       ansible.builtin.stat:
-        path: /home/{{ ansible_user }}/homeAssistant/config/custom_components/hacs
+        path: /home/{{ ansible_user }}/homeAssistant/custom_components/hacs
       register: hacs_installed
 
     - name: Download HACS if it's not yet installed
