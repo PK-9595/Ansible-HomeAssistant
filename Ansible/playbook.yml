@@ -406,6 +406,7 @@
 
 - name: Setup HACS for home assistant # HACS installation script does some finding of the correct working directory
   hosts: all
+  become: true
   any_errors_fatal: true
   tasks:
 
