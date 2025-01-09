@@ -9,7 +9,10 @@ services:
       - /run/dbus:/run/dbus:ro
     privileged: true
     restart: unless-stopped
-    network_mode: host # Shares the host's network stack, uses the host's IP address. 
+    ports:
+      - 8123:8123
+    networks:
+      - ha-network 
 
   zigbee2MQTT: # Communicates with zigbee devices via the zigbee dongle
     container_name: zigbee2mqtt-HA
