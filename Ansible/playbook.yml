@@ -189,55 +189,91 @@
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
-    - name: Download Docker Installation Script
-      ansible.builtin.get_url:
-        url: "{{DOCKER_INSTALLATION_SCRIPT_URL}}"
-        dest: "/tmp/{{DOCKER_INSTALLATION_SCRIPT_NAME}}"
-        mode: '0755'
-        force: true # Always download even if already present
+    - name: Install required dependencies
+      ansible.builtin.apt:
+        name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        state: present
+        update_cache: yes
 
-    - name: Check if installation script is new
-      ansible.builtin.command:
-        cmd: "diff /tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }} /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-      register: diff_docker_installation_script_result
-      ignore_errors: true
+    - name: Add Docker GPG key
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        state: present
 
-    - name: Replace Docker Installation Script If Different
-      when: diff_docker_installation_script_result.rc != 0
-      ansible.builtin.copy:
-        src: "/tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-        remote_src: true
-        dest: "/home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
 
-    - name: Run Docker Installation Script If Different
-      when: diff_docker_installation_script_result.rc != 0
-      ansible.builtin.shell: "sh /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-      ignore_errors: true
+    - name: Install or update Docker and dependencies
+      ansible.builtin.apt:
+        name: 
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+        update_cache: yes
 
-    - name: Download Docker Compose Binary
-      ansible.builtin.get_url:
-        url: "{{ DOCKER_COMPOSE_BINARY_URL_PREFIX }}{{ ansible_system | lower }}-{{ ansible_architecture }}"
-        dest: /tmp/docker-compose
-        mode: '0755'
-        force: true # Always download even if already present
-      register: download_result
-      retries: 2
-      delay: 5 # 5 seconds delay
-      until: download_result.msg.startswith('OK') # Meaning that the download is successful
+    - name: Install or update Docker Compose (V2)
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: latest
+        update_cache: yes
 
-    - name: Check If Docker Compose Binary Is Different
-      ansible.builtin.command:
-        cmd: "diff /tmp/docker-compose /usr/local/bin/docker-compose"
-      register: diff_docker_compose_result
-      ignore_errors: true
+    # - name: Download Docker Installation Script
+    #   ansible.builtin.get_url:
+    #     url: "{{DOCKER_INSTALLATION_SCRIPT_URL}}"
+    #     dest: "/tmp/{{DOCKER_INSTALLATION_SCRIPT_NAME}}"
+    #     mode: '0755'
+    #     force: true # Always download even if already present
 
-    - name: Replace Docker Compose Binary If New
-      when: diff_docker_compose_result.rc != 0
-      ansible.builtin.copy:
-        src: /tmp/docker-compose
-        remote_src: true
-        dest: /usr/local/bin/docker-compose
-        mode: '0755'
+    # - name: Check if installation script is new
+    #   ansible.builtin.command:
+    #     cmd: "diff /tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }} /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
+    #   register: diff_docker_installation_script_result
+    #   ignore_errors: true
+
+    # - name: Replace Docker Installation Script If Different
+    #   when: diff_docker_installation_script_result.rc != 0
+    #   ansible.builtin.copy:
+    #     src: "/tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
+    #     remote_src: true
+    #     dest: "/home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
+
+    # - name: Run Docker Installation Script If Different
+    #   when: diff_docker_installation_script_result.rc != 0
+    #   ansible.builtin.shell: "sh /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
+    #   ignore_errors: true
+
+    # - name: Download Docker Compose Binary
+    #   ansible.builtin.get_url:
+    #     url: "{{ DOCKER_COMPOSE_BINARY_URL_PREFIX }}{{ ansible_system | lower }}-{{ ansible_architecture }}"
+    #     dest: /tmp/docker-compose
+    #     mode: '0755'
+    #     force: true # Always download even if already present
+    #   register: download_result
+    #   retries: 2
+    #   delay: 5 # 5 seconds delay
+    #   until: download_result.msg.startswith('OK') # Meaning that the download is successful
+
+    # - name: Check If Docker Compose Binary Is Different
+    #   ansible.builtin.command:
+    #     cmd: "diff /tmp/docker-compose /usr/local/bin/docker-compose"
+    #   register: diff_docker_compose_result
+    #   ignore_errors: true
+
+    # - name: Replace Docker Compose Binary If New
+    #   when: diff_docker_compose_result.rc != 0
+    #   ansible.builtin.copy:
+    #     src: /tmp/docker-compose
+    #     remote_src: true
+    #     dest: /usr/local/bin/docker-compose
+    #     mode: '0755'
 
     - name: Add User To Docker Group
       ansible.builtin.user:
@@ -263,7 +299,7 @@
   tasks:
   
     # Docker & Variable Files
-    - name: Copy docker-compose file and .env files into home directory
+    - name: Copy docker compose file and .env files into home directory
       ansible.builtin.copy:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -341,8 +377,8 @@
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
-    - name: Use docker-compose up
-      ansible.builtin.shell: "docker-compose --env-file .env up -d"
+    - name: Use docker compose up
+      ansible.builtin.shell: "docker compose --env-file .env up -d"
       args:
         chdir: "/home/{{ ansible_user }}"
 
@@ -355,8 +391,8 @@
         - {path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"}
         - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml"}
 
-    - name: Use docker-compose down
-      ansible.builtin.shell: "docker-compose down"
+    - name: Use docker compose down
+      ansible.builtin.shell: "docker compose down"
 
 
 - name: Amend home assistant configuration
@@ -399,33 +435,72 @@
         - {regex: '^\s*script:', line: "script: !include_dir_merge_list scripts/"}
         - {regex: '^\s*scene:', line: "scene: !include_dir_merge_list scenes/"}
         
-    - name: Add Xiaomi Miot integration 
-      ansible.builtin.blockinfile:
-        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
-        block: |
-          # Add xiaomi miot integration
-          shell_command:
-            update_xiaomi_miot: |-
-              wget -O - https://get.hacs.vip | DOMAIN=xiaomi_miot bash -
-        insertafter: EOF
+    - name: Ensure custom_components directory exists
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/homeAssistant/custom_components"
+        state: directory
+        mode: '0755'
 
 
-- name: Setup HACS for home assistant # HACS installation script does some finding of the correct working directory
+- name: Setup Add-ons for home assistant # HACS installation script does some finding of the correct working directory
   hosts: all
   become: true
   any_errors_fatal: true
   tasks:
 
-    - name: Check if HACS is already installed
-      ansible.builtin.stat:
-        path: /home/{{ ansible_user }}/homeAssistant/custom_components/hacs
-      register: hacs_installed
-
-    - name: Download HACS if it's not yet installed
-      when: not hacs_installed.stat.exists
+    #HACs Installation
+    - name: Install or update HACS
       ansible.builtin.shell: "wget -O - https://get.hacs.xyz | bash -"
       args:
-        chdir: "/home/{{ ansible_user }}/homeAssistant"
+        chdir: "/home/{{ ansible_user }}/homeAssistant/"
+      register: hacs_result
+      changed_when: "'successfully installed' in hacs_result.stdout or 'already up to date' not in hacs_result.stdout"
+
+    #Xiaomi MIOT Integration
+    - name: Rename old Xiaomi Miot ZIP if it exists
+      ansible.builtin.command:
+        cmd: "mv /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
+      args:
+        removes: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+      ignore_errors: true
+
+    - name: Download Xiaomi Miot integration ZIP
+      ansible.builtin.get_url:
+        url: "https://ghrp.hacs.vip/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip"
+        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+        mode: '0644'
+        force: true  # Always download the latest version even if the file exists
+      register: download_result
+
+    - name: Compare new and old Xiaomi Miot ZIP files 
+      ansible.builtin.shell: |
+        if [ -f /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip ]; then 
+          diff /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip
+        else
+          exit 1
+        fi
+      register: zip_diff_result
+      changed_when: zip_diff_result.rc != 0
+      ignore_errors: true
+
+    - name: Remove old Xiaomi Miot integration if ZIP changed
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
+        state: absent
+      when: zip_diff_result.changed
+
+    - name: Extract new Xiaomi Miot integration if ZIP changed
+      ansible.builtin.unarchive:
+        src: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
+        remote_src: true
+        extra_opts: [--strip-components=1]
+      when: zip_diff_result.changed
+
+    - name: Cleanup old Xiaomi Miot ZIP file
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
+        state: absent
 
 
 - name: Start docker containers and run home assistant # Final Play
@@ -434,8 +509,8 @@
   any_errors_fatal: true # Stop entire playbook if this play fails
   tasks:
 
-    - name: Use docker-compose up
-      ansible.builtin.shell: "docker-compose --env-file .env up -d"
+    - name: Use docker compose up
+      ansible.builtin.shell: "docker compose --env-file .env up -d"
       args:
         chdir: "/home/{{ ansible_user }}"
 

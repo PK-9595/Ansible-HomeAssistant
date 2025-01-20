@@ -1,4 +1,4 @@
-version: '3' # Docker compose file format version
+# version: '3' # Docker compose file format version
 services:
   homeassistant:
     container_name: homeAssistant
