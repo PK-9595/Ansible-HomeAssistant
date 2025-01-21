@@ -1,0 +1,28 @@
+---
+# tasks file for setupSSH
+- name: Setup SSH
+  become: true
+  block:
+
+    - name: Ensure password authentication is disabled in /etc/ssh/sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+        backup: yes
+      register: disable_password_auth
+
+    - name: Ensure public key authentication is enabled in sshd_config
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        state: present
+      register: enable_pubkey_auth
+
+    - name: Reload SSH to apply configuration changes
+      ansible.builtin.service:
+        name: ssh
+        state: reloaded
+      when: disable_password_auth.changed or enable_pubkey_auth.changed

@@ -1,0 +1,45 @@
+---
+# tasks file for adjustHAConfigFiles
+- name: Adjust Home Assistant Related Configuration Files
+  become: true
+  block:
+
+    # Mosquitto configuration files
+    - name: Ensure listener line & allow_anonymous line is present in mosquitto.conf file
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {line: "listener 1883 0.0.0.0"}
+        - {line: "allow_anonymous true"}
+
+    # Zigbee2MQTT configuration files
+    - name: Use correct zigbee dongle device file & set extra metadata (for home assistant) to be published in messages
+      ansible.builtin.lineinfile:
+        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {regex: '^\s*port: /dev/tty', line: "  port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"}
+        - {regex: '^\s*homeassistant:', line: "homeassistant: true # Publishes messages with extra metadata compatible with home assistant"}
+        - {regex: '^\s*server:', line: "  server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"}
+
+    # HomeAssistant configuration files
+    - name: Set configuration for homeAssistant
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+        state: "{{ item.state | default('present') }}"
+      loop:
+        - {regex: '^\s*automation:', line: "automation: !include_dir_merge_list automations/"}
+        - {regex: '^\s*script:', line: "script: !include_dir_merge_list scripts/"}
+        - {regex: '^\s*scene:', line: "scene: !include_dir_merge_list scenes/"}
+        
+    - name: Ensure custom_components directory exists
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/homeAssistant/custom_components"
+        state: directory
+        mode: '0755'

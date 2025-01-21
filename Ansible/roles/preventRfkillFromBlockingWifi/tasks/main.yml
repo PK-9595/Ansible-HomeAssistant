@@ -1,0 +1,21 @@
+---
+# tasks file for preventRfkillFromBlockingWifi
+- name: Prevent Rfkill From Blocking Wifi
+  become: true
+  block:
+
+    - name: Add 'rfkill unblock wifi' before 'exit 0' in /etc/rc.local file
+      ansible.builtin.lineinfile:
+        path: /etc/rc.local
+        regexp: '^rfkill unblock wifi;$'
+        insertbefore: '^exit 0'
+        line: 'rfkill unblock wifi;'
+        create: no
+
+    - name: Add 'rfkill unblock bluetooth' before 'exit 0' in /etc/rc.local file
+      ansible.builtin.lineinfile:
+        path: /etc/rc.local
+        regexp: '^rfkill unblock bluetooth;$'
+        insertbefore: '^exit 0'
+        line: 'rfkill unblock bluetooth;'
+        create: no

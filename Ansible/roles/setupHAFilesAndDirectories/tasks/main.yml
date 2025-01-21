@@ -1,0 +1,79 @@
+---
+# tasks file for setupHAFilesAndDirectories
+
+- name: Set Up Home Assistant Related Files & Directories
+  become: false
+  block:
+
+    # Docker & Variable Files
+    - name: Copy docker compose file and .env files into home directory
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: '0644'
+      loop:
+        - {src: "{{ playbook_dir }}/../Docker/docker-compose.yml", dest: "/home/{{ ansible_user }}"}
+        - {src: "{{ playbook_dir }}/../.env", dest: "/home/{{ ansible_user }}"}
+
+    # Home Assistant Files & Directories
+    - name: Set up homeAssistant directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/automations", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scripts", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/homeAssistant/scenes", state: "directory"}
+
+    # Zigbee2MQTT Files & Directories
+    - name: Set up zigbee2mqtt directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data", state: "directory"}
+
+    # Mosquitto Files & Directories
+    - name: Set up mosquitto directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/mosquitto/config", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
+        - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
+
+    # NodeRed Files & Directories
+    - name: Set up nodered directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./nodered", state: "directory"}
+
+    # ESPHome Files & Directories
+    - name: Set up esphome directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+      loop:
+        - {path: "./esphome", state: "directory"}
+
+    # Mariadb Files & Directories
+    - name: Set up mariadb directory
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: "{{ item.state }}"
+        mode: "{{ item.mode | default('0755')}}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+      loop:
+        - {path: "./mariadb", state: "directory"}
+      become: true

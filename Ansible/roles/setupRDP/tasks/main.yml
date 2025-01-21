@@ -1,0 +1,7 @@
+---
+# tasks file for setupRDP
+- name: Enable and start xrdp service
+  ansible.builtin.systemd:
+    name: xrdp
+    enabled: true
+    state: started

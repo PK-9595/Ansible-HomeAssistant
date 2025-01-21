@@ -1,0 +1,8 @@
+---
+# tasks file for runHA
+
+- name: Use docker compose up
+  become: false
+  ansible.builtin.shell: "docker compose --env-file .env up -d"
+  args:
+    chdir: "/home/{{ ansible_user }}"

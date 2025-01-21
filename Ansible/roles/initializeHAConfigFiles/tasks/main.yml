@@ -1,0 +1,22 @@
+---
+# tasks file for initializeHAConfigFiles
+- name: Initialize Home Assistant Related Configuration Files
+  become: false
+  block:
+
+    - name: Use docker compose up
+      ansible.builtin.shell: "docker compose --env-file .env up -d"
+      args:
+        chdir: "/home/{{ ansible_user }}"
+
+    - name: Wait for configuration files to be initialized
+      ansible.builtin.wait_for:
+        path: "{{ item.path }}"
+        state: "{{ item.state | default('present')}}"
+        timeout: "{{ item.timeout | default('300')}}"
+      loop:
+        - {path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"}
+        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml"}
+
+    - name: Use docker compose down
+      ansible.builtin.shell: "docker compose down"

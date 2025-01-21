@@ -1,467 +1,108 @@
 ---
-# Install python so ansible can run using its other modules
-- name: Install python using raw module
+# Setup HA Core & Add-ons using docker containers
+- name: Python Installation
   hosts: all
-  become: true
-  gather_facts: false
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    - name: Check OS
-      raw: cat /etc/os-release # Store OS information in a variable to use in subsequent tasks
-      register: os_release
-      changed_when: false
-      failed_when: "'Debian' not in os_release.stdout and 'Ubuntu' not in os_release.stdout and 'Raspbian' not in os_release.stdout"
-
-    - name: Check if python is installed
-      raw: python3 --version
-      register: python_check
-      changed_when: false
-
-    - name: Install python using raw module
-      raw: apt update && apt install python3 -y
-      when: python_check.rc != 0
-
-# Disable password based SSH for security reasons
-- name: Disable password authentication for SSH, and use public key authentication instead
-  hosts: all
-  become: true
-  tasks:
-
-    - name: Ensure password authentication is disabled in /etc/ssh/sshd_config
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#?PasswordAuthentication'
-        line: 'PasswordAuthentication no'
-        state: present
-        backup: yes
-      register: disable_password_auth
-
-    - name: Ensure public key authentication is enabled in sshd_config
-      ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: '^#?PubkeyAuthentication'
-        line: 'PubkeyAuthentication yes'
-        state: present
-      register: enable_pubkey_auth
-
-    - name: Reload SSH to apply configuration changes
-      ansible.builtin.service:
-        name: ssh
-        state: reloaded
-      when: disable_password_auth.changed or enable_pubkey_auth.changed
-
-# Update System & Install Useful Packages
-- name: Update OS and Install Useful CLI Tools on Debian-Based Systems
-  hosts: all
-  become: true
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    - name: Update APT package cache
-      ansible.builtin.apt:
-        update_cache: yes
-
-    - name: Upgrade all installed packages
-      ansible.builtin.apt:
-        upgrade: full
-        force_apt_get: yes
-
-    - name: Remove unused packages
-      ansible.builtin.apt:
-        autoremove: yes
-
-    - name: Install network-manager package
-      ansible.builtin.apt:
-        name: network-manager
-        state: present
-
-    - name: Install snapd package
-      ansible.builtin.apt:
-        name: snapd
-        state: present
-
-    - name: Install btop CLI tool using snap
-      community.general.snap:
-        name: btop
-        state: present
-      environment:
-        PATH: "{{ ansible_env.PATH }}:/snap/bin"
-
-    - name: Install tree CLI tool
-      ansible.builtin.apt:
-        name: tree
-        state: present
-
-    - name: Install fzf CLI tool
-      ansible.builtin.apt:
-        name: fzf
-        state: present
-
-    - name: Install tldr CLI tool
-      ansible.builtin.apt:
-        name: tldr
-        state: present
-
-    - name: Install neovim package
-      ansible.builtin.apt:
-        name: neovim
-        state: present
-
-    - name: Install neofetch package
-      ansible.builtin.apt:
-        name: neofetch
-        state: present
-
-    - name: Install rdp
-      ansible.builtin.apt:
-        name: xrdp
-        state: present
-
-# Prevent rfkill from blocking wifi on startup - common on raspberry pi
-- name: Allow wifi/bluetooth on start - insert 'rfkill unblock wifi' into /etc/rc.local
-  hosts: all
-  become: true
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    - name: Add 'rfkill unblock wifi' before 'exit 0' in /etc/rc.local file
-      ansible.builtin.lineinfile:
-        path: /etc/rc.local
-        regexp: '^rfkill unblock wifi;$'
-        insertbefore: '^exit 0'
-        line: 'rfkill unblock wifi;'
-        create: no
-
-    - name: Add 'rfkill unblock bluetooth' before 'exit 0' in /etc/rc.local file
-      ansible.builtin.lineinfile:
-        path: /etc/rc.local
-        regexp: '^rfkill unblock bluetooth;$'
-        insertbefore: '^exit 0'
-        line: 'rfkill unblock bluetooth;'
-        create: no
-
-# Configure environment for user preference
-- name: Configure User Environment
-  hosts: all
-  tasks:
-
-    - name: Configure default editor and visual text editor and add /snap/bin to PATH in ~/.bashrc
-      ansible.builtin.lineinfile:
-        path: /home/{{ansible_user}}/.bashrc
-        line: "{{ item.line }}"
-        regexp: "{{ item.regexp }}"
-        insertbefore: BOF
-        state: present
-      loop:
-        - { line: 'export PATH=${PATH}:/snap/bin;', regexp: '^export PATH=${PATH}:/snap/bin;$'}
-        - { line: 'export EDITOR=vim;', regexp: '^export EDITOR=vim;$'}
-        - { line: 'export VISUAL=vim;', regexp: '^export VISUAL=vim;$'}
-
-    - name: Get ~/.bash_profile to source from ~/.bashrc
-      ansible.builtin.lineinfile:
-        path: /home/{{ansible_user}}/.bash_profile
-        regexp: '^source .bashrc$'
-        line: 'source .bashrc'
-        insertafter: BOF
-        state: present
-
-    - name: Change default shell for user to bash
-      ansible.builtin.user:
-        name: "{{ansible_user}}"
-        shell: /bin/bash
-
-# Setup RDP
-- name: Setup RDP
-  hosts: all
-  tasks:
-
-    - name: Enable and start xrdp service
-      ansible.builtin.systemd:
-        name: xrdp
-        enabled: true
-        state: started
-
-# docker setup
-- name: Setup Docker
-  hosts: all
-  become: true
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    - name: Install required dependencies
-      ansible.builtin.apt:
-        name: 
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
-        state: present
-        update_cache: yes
-
-    - name: Add Docker GPG key
-      ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-        state: present
-
-    - name: Add Docker repository
-      ansible.builtin.apt_repository:
-        repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
-        state: present
-        filename: docker
-
-    - name: Install or update Docker and dependencies
-      ansible.builtin.apt:
-        name: 
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-        state: latest
-        update_cache: yes
-
-    - name: Install or update Docker Compose (V2)
-      ansible.builtin.apt:
-        name: docker-compose-plugin
-        state: latest
-        update_cache: yes
-
-    - name: Add User To Docker Group
-      ansible.builtin.user:
-        name: "{{ansible_user}}"
-        groups: docker
-        append: yes
-
-    - name: Enable & Start Docker Service
-      ansible.builtin.service:
-        name: docker
-        enabled: true
-        state: started
-
-    - name: Run 'hello-world' Container To Test If Docker Is Working
-      community.docker.docker_container:
-        name: hello-world
-        image: hello-world
-        state: started
-
-- name: Setup Home Assistant Required Directories & Files
-  hosts: all
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-  
-    # Docker & Variable Files
-    - name: Copy docker compose file and .env files into home directory
-      ansible.builtin.copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        mode: '0644'
-      loop:
-        - {src: "{{ playbook_dir }}/../Docker/docker-compose.yml", dest: "/home/{{ ansible_user }}"}
-        - {src: "{{ playbook_dir }}/../.env", dest: "/home/{{ ansible_user }}"}
-
-    # Home Assistant Files & Directories
-    - name: Set up homeAssistant directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "/home/{{ ansible_user }}/homeAssistant", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/homeAssistant/automations", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/homeAssistant/scripts", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/homeAssistant/scenes", state: "directory"}
-
-    # Zigbee2MQTT Files & Directories
-    - name: Set up zigbee2mqtt directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data", state: "directory"}
-
-    # Mosquitto Files & Directories
-    - name: Set up mosquitto directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "/home/{{ ansible_user }}/mosquitto/config", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
-
-    # NodeRed Files & Directories
-    - name: Set up nodered directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "./nodered", state: "directory"}
-
-    # ESPHome Files & Directories
-    - name: Set up esphome directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-      loop:
-        - {path: "./esphome", state: "directory"}
-
-    # Mariadb Files & Directories
-    - name: Set up mariadb directory
-      ansible.builtin.file:
-        path: "{{ item.path }}"
-        state: "{{ item.state }}"
-        mode: "{{ item.mode | default('0755')}}"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-      loop:
-        - {path: "./mariadb", state: "directory"}
-      become: true
-  
-- name: Start and stop containers to initialize home assistant config files
-  hosts: all
-  become: false
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    - name: Use docker compose up
-      ansible.builtin.shell: "docker compose --env-file .env up -d"
-      args:
-        chdir: "/home/{{ ansible_user }}"
-
-    - name: Wait for configuration files to be initialized
-      ansible.builtin.wait_for:
-        path: "{{ item.path }}"
-        state: "{{ item.state | default('present')}}"
-        timeout: "{{ item.timeout | default('300')}}"
-      loop:
-        - {path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"}
-        - {path: "/home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml"}
-
-    - name: Use docker compose down
-      ansible.builtin.shell: "docker compose down"
-
-
-- name: Amend home assistant configuration
-  hosts: all
-  become: true
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
-
-    # Mosquitto configuration files
-    - name: Ensure listener line & allow_anonymous line is present in mosquitto.conf file
-      ansible.builtin.lineinfile:
-        path: /home/{{ ansible_user }}/mosquitto/config/mosquitto.conf
-        line: "{{ item.line }}"
-        state: "{{ item.state | default('present') }}"
-      loop:
-        - {line: "listener 1883 0.0.0.0"}
-        - {line: "allow_anonymous true"}
-
-    # Zigbee2MQTT configuration files
-    - name: Use correct zigbee dongle device file & set extra metadata (for home assistant) to be published in messages
-      ansible.builtin.lineinfile:
-        path: /home/{{ ansible_user }}/zigbee2mqtt/data/configuration.yaml
-        regex: "{{ item.regex }}"
-        line: "{{ item.line }}"
-        state: "{{ item.state | default('present') }}"
-      loop:
-        - {regex: '^\s*port: /dev/tty', line: "  port: {{ ZIGBEE_DONGLE }}  # zigbee receiver device"}
-        - {regex: '^\s*homeassistant:', line: "homeassistant: true # Publishes messages with extra metadata compatible with home assistant"}
-        - {regex: '^\s*server:', line: "  server: mqtt://mosquitto-HA:1883 # Where to send mqtt messages to"}
-
-    # HomeAssistant configuration files
-    - name: Set configuration for homeAssistant
-      ansible.builtin.lineinfile:
-        path: "/home/{{ ansible_user }}/homeAssistant/configuration.yaml"
-        regex: "{{ item.regex }}"
-        line: "{{ item.line }}"
-        state: "{{ item.state | default('present') }}"
-      loop:
-        - {regex: '^\s*automation:', line: "automation: !include_dir_merge_list automations/"}
-        - {regex: '^\s*script:', line: "script: !include_dir_merge_list scripts/"}
-        - {regex: '^\s*scene:', line: "scene: !include_dir_merge_list scenes/"}
-        
-    - name: Ensure custom_components directory exists
-      ansible.builtin.file:
-        path: "/home/{{ ansible_user }}/homeAssistant/custom_components"
-        state: directory
-        mode: '0755'
-
-
-- name: Setup Add-ons for home assistant # HACS installation script does some finding of the correct working directory
-  hosts: all
-  become: true
   any_errors_fatal: true
-  tasks:
+  gather_facts: false
+  roles:
+    - installPython
 
-    #HACs Installation
-    - name: Install or update HACS
-      ansible.builtin.shell: "wget -O - https://get.hacs.xyz | bash -"
-      args:
-        chdir: "/home/{{ ansible_user }}/homeAssistant/"
-      register: hacs_result
-      changed_when: "'successfully installed' in hacs_result.stdout or 'already up to date' not in hacs_result.stdout"
-
-    #Xiaomi MIOT Integration
-    - name: Rename old Xiaomi Miot ZIP if it exists
-      ansible.builtin.command:
-        cmd: "mv /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
-      args:
-        removes: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-      ignore_errors: true
-
-    - name: Download Xiaomi Miot integration ZIP
-      ansible.builtin.get_url:
-        url: "https://ghrp.hacs.vip/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip"
-        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-        mode: '0644'
-        force: true  # Always download the latest version even if the file exists
-      register: download_result
-
-    - name: Compare new and old Xiaomi Miot ZIP files 
-      ansible.builtin.shell: |
-        if [ -f /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip ]; then 
-          diff /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip
-        else
-          exit 1
-        fi
-      register: zip_diff_result
-      changed_when: zip_diff_result.rc != 0
-      ignore_errors: true
-
-    - name: Remove old Xiaomi Miot integration if ZIP changed
-      ansible.builtin.file:
-        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
-        state: absent
-      when: zip_diff_result.changed
-
-    - name: Extract new Xiaomi Miot integration if ZIP changed
-      ansible.builtin.unarchive:
-        src: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
-        remote_src: true
-        extra_opts: [--strip-components=1]
-      when: zip_diff_result.changed
-
-    - name: Cleanup old Xiaomi Miot ZIP file
-      ansible.builtin.file:
-        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
-        state: absent
-
-
-- name: Start docker containers and run home assistant # Final Play
+- name: HA Setup
   hosts: all
-  become: false
-  any_errors_fatal: true # Stop entire playbook if this play fails
-  tasks:
+  any_errors_fatal: true
+  gather_facts: true
+  roles:
+    - setupSSH
+    - updateAndInstallPackages
+    - preventRfkillFromBlockingWifi
+    - configureUserEnvironment
+    - setupRDP
+    - setupDocker
+    - setupHAFilesAndDirectories
+    - initializeHAConfigFiles
+    - adjustHAConfigFiles
+    - setupHAAddOns
+    - runHA
 
-    - name: Use docker compose up
-      ansible.builtin.shell: "docker compose --env-file .env up -d"
-      args:
-        chdir: "/home/{{ ansible_user }}"
 
-# Includes tasks vs roles
+# # Install python so ansible can run using its other modules
+# - name: Install python using raw module
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - installPython
+
+# # Disable password based SSH for security reasons
+# - name: Disable password authentication for SSH, and use public key authentication instead
+#   hosts: all
+#   roles:
+#     - setupSSH
+
+# # Update System & Install Useful Packages
+# - name: Update OS and Install Useful CLI Tools on Debian-Based Systems
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - updateAndInstallPackages
+
+# # Prevent rfkill from blocking wifi on startup - common on raspberry pi
+# - name: Allow wifi/bluetooth on start - insert 'rfkill unblock wifi' into /etc/rc.local
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - preventRfkillFromBlockingWifi
+
+# # Configure environment for user preference
+# - name: Configure User Environment
+#   hosts: all
+#   roles:
+#     - configureUserEnvironment
+
+# # Setup RDP
+# - name: Setup RDP
+#   hosts: all
+#   roles:
+#     - setupRDP
+
+# # docker setup
+# - name: Setup Docker
+#   hosts: all
+#   become: true
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - setupDocker
+
+# # Setup HA Required Directories & Files
+# - name: Setup Home Assistant Required Directories & Files
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - setupHAFilesAndDirectories
+  
+# # Initialize HA-Related Config Files by Starting & Stopping Containers
+# - name: Start and stop containers to initialize home assistant config files
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - initializeHAConfigFiles
+
+# # Adjust HA-Related Config Files
+# - name: Amend home assistant configuration
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - adjustHAConfigFiles
+
+# # Setup/Update HA Add-Ons
+# - name: Setup Add-ons for home assistant # HACS installation script does some finding of the correct working directory
+#   hosts: all
+#   any_errors_fatal: true
+#   roles:
+#     - setupHAAddOns
+
+# # Final Run
+# - name: Start docker containers and run home assistant
+#   hosts: all
+#   any_errors_fatal: true # Stop entire playbook if this play fails
+#   roles:
+#     - runHA

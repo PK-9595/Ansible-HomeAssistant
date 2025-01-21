@@ -1,0 +1,30 @@
+---
+# tasks file for configureUserEnvironment
+- name: Configure User Environment for user preference
+  become: false
+  block:
+
+    - name: Configure default editor and visual text editor and add /snap/bin to PATH in ~/.bashrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ansible_user}}/.bashrc
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp }}"
+        insertbefore: BOF
+        state: present
+      loop:
+        - { line: 'export PATH=${PATH}:/snap/bin;', regexp: '^export PATH=${PATH}:/snap/bin;$'}
+        - { line: 'export EDITOR=vim;', regexp: '^export EDITOR=vim;$'}
+        - { line: 'export VISUAL=vim;', regexp: '^export VISUAL=vim;$'}
+
+    - name: Get ~/.bash_profile to source from ~/.bashrc
+      ansible.builtin.lineinfile:
+        path: /home/{{ansible_user}}/.bash_profile
+        regexp: '^source .bashrc$'
+        line: 'source .bashrc'
+        insertafter: BOF
+        state: present
+
+    - name: Change default shell for user to bash
+      ansible.builtin.user:
+        name: "{{ansible_user}}"
+        shell: /bin/bash

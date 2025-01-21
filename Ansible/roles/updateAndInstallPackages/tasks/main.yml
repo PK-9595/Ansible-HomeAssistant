@@ -1,0 +1,65 @@
+---
+# tasks file for updateAndInstallPackages
+- name: Update & Install Packages
+  become: true
+  block:
+
+    - name: Update APT package cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Upgrade all installed packages
+      ansible.builtin.apt:
+        upgrade: full
+        force_apt_get: yes
+
+    - name: Remove unused packages
+      ansible.builtin.apt:
+        autoremove: yes
+
+    - name: Install network-manager package
+      ansible.builtin.apt:
+        name: network-manager
+        state: present
+
+    - name: Install snapd package
+      ansible.builtin.apt:
+        name: snapd
+        state: present
+
+    - name: Install btop CLI tool using snap
+      community.general.snap:
+        name: btop
+        state: present
+      environment:
+        PATH: "{{ ansible_env.PATH }}:/snap/bin"
+
+    - name: Install tree CLI tool
+      ansible.builtin.apt:
+        name: tree
+        state: present
+
+    - name: Install fzf CLI tool
+      ansible.builtin.apt:
+        name: fzf
+        state: present
+
+    - name: Install tldr CLI tool
+      ansible.builtin.apt:
+        name: tldr
+        state: present
+
+    - name: Install neovim package
+      ansible.builtin.apt:
+        name: neovim
+        state: present
+
+    - name: Install neofetch package
+      ansible.builtin.apt:
+        name: neofetch
+        state: present
+
+    - name: Install rdp
+      ansible.builtin.apt:
+        name: xrdp
+        state: present
