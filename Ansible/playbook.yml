@@ -225,56 +225,6 @@
         state: latest
         update_cache: yes
 
-    # - name: Download Docker Installation Script
-    #   ansible.builtin.get_url:
-    #     url: "{{DOCKER_INSTALLATION_SCRIPT_URL}}"
-    #     dest: "/tmp/{{DOCKER_INSTALLATION_SCRIPT_NAME}}"
-    #     mode: '0755'
-    #     force: true # Always download even if already present
-
-    # - name: Check if installation script is new
-    #   ansible.builtin.command:
-    #     cmd: "diff /tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }} /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-    #   register: diff_docker_installation_script_result
-    #   ignore_errors: true
-
-    # - name: Replace Docker Installation Script If Different
-    #   when: diff_docker_installation_script_result.rc != 0
-    #   ansible.builtin.copy:
-    #     src: "/tmp/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-    #     remote_src: true
-    #     dest: "/home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-
-    # - name: Run Docker Installation Script If Different
-    #   when: diff_docker_installation_script_result.rc != 0
-    #   ansible.builtin.shell: "sh /home/{{ ansible_user }}/{{ DOCKER_INSTALLATION_SCRIPT_NAME }}"
-    #   ignore_errors: true
-
-    # - name: Download Docker Compose Binary
-    #   ansible.builtin.get_url:
-    #     url: "{{ DOCKER_COMPOSE_BINARY_URL_PREFIX }}{{ ansible_system | lower }}-{{ ansible_architecture }}"
-    #     dest: /tmp/docker-compose
-    #     mode: '0755'
-    #     force: true # Always download even if already present
-    #   register: download_result
-    #   retries: 2
-    #   delay: 5 # 5 seconds delay
-    #   until: download_result.msg.startswith('OK') # Meaning that the download is successful
-
-    # - name: Check If Docker Compose Binary Is Different
-    #   ansible.builtin.command:
-    #     cmd: "diff /tmp/docker-compose /usr/local/bin/docker-compose"
-    #   register: diff_docker_compose_result
-    #   ignore_errors: true
-
-    # - name: Replace Docker Compose Binary If New
-    #   when: diff_docker_compose_result.rc != 0
-    #   ansible.builtin.copy:
-    #     src: /tmp/docker-compose
-    #     remote_src: true
-    #     dest: /usr/local/bin/docker-compose
-    #     mode: '0755'
-
     - name: Add User To Docker Group
       ansible.builtin.user:
         name: "{{ansible_user}}"
