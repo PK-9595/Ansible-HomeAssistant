@@ -16,7 +16,6 @@
     - updateAndInstallPackages
     - preventRfkillFromBlockingWifi
     - configureUserEnvironment
-    - setupRDP
     - setupDocker
     - setupHAFilesAndDirectories
     - initializeHAConfigFiles

@@ -63,3 +63,9 @@
       ansible.builtin.apt:
         name: xrdp
         state: present
+
+    - name: Enable and start xrdp service
+      ansible.builtin.systemd:
+        name: xrdp
+        enabled: true
+        state: started
