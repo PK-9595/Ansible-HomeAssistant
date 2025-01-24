@@ -1,6 +1,6 @@
 all:
  hosts:
-   raspberryPi:
+   homeAssistantServer:
      ansible_host: "{{ lookup('env', 'SERVER_HOSTNAME') }}"
      ansible_user: "{{ lookup('env', 'USER') }}"
      ansible_ssh_private_key_file: "{{ lookup('env', 'SSH_PRIV_KEY') }}"

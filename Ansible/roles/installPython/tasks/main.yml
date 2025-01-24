@@ -1,6 +1,6 @@
 ---
 # tasks file for installPython
-- name: Ensure python is installed
+- name: Ensure python & necessary packages are installed
   become: true
   block:
   
@@ -18,3 +18,16 @@
     - name: Install python using raw module
       raw: apt update && apt install python3 -y
       when: python_check.rc != 0
+
+    - name: Enable necessary repositories for package manager (for Ubuntu)
+      raw: add-apt-repository -y universe
+      when: "'Ubuntu' in os_release.stdout"
+
+    - name: Run apt update
+      raw: apt update
+
+    - name: Install pip
+      raw: apt install python3-pip -y
+
+    - name: Install the module 'six'
+      raw: apt install python3-six -y

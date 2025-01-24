@@ -23,6 +23,7 @@
         line: 'source .bashrc'
         insertafter: BOF
         state: present
+        create: yes
 
     - name: Change default shell for user to bash
       ansible.builtin.user:

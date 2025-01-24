@@ -4,6 +4,11 @@
   become: true
   block:
 
+    - name: Check if /etc/rc.local exists
+      stat:
+        path: /etc/rc.local
+      register: rc_local_stat
+
     - name: Add 'rfkill unblock wifi' before 'exit 0' in /etc/rc.local file
       ansible.builtin.lineinfile:
         path: /etc/rc.local
@@ -11,6 +16,7 @@
         insertbefore: '^exit 0'
         line: 'rfkill unblock wifi;'
         create: no
+      when: rc_local_stat.stat.exists
 
     - name: Add 'rfkill unblock bluetooth' before 'exit 0' in /etc/rc.local file
       ansible.builtin.lineinfile:
@@ -19,3 +25,4 @@
         insertbefore: '^exit 0'
         line: 'rfkill unblock bluetooth;'
         create: no
+      when: rc_local_stat.stat.exists

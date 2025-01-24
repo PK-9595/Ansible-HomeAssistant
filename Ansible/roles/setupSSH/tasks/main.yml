@@ -4,6 +4,10 @@
   become: true
   block:
 
+    # - name: Gather and display all facts #For debugging
+    #   ansible.builtin.debug:
+    #     var: ansible_facts
+
     - name: Ensure password authentication is disabled in /etc/ssh/sshd_config
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config

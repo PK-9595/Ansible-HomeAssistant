@@ -46,7 +46,12 @@
         - {path: "/home/{{ ansible_user }}/mosquitto/config", state: "directory"}
         - {path: "/home/{{ ansible_user }}/mosquitto/data", state: "directory"}
         - {path: "/home/{{ ansible_user }}/mosquitto/log", state: "directory"}
-        - {path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf", state: "file", mode: "0644"}
+
+    - name: Ensure mosquitto.conf file exists
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf"
+        state: "touch"  # This creates an empty file if it doesn't exist
+        mode: "0644"
 
     # NodeRed Files & Directories
     - name: Set up nodered directory

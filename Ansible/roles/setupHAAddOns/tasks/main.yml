@@ -12,48 +12,48 @@
       register: hacs_result
       changed_when: "'successfully installed' in hacs_result.stdout or 'already up to date' not in hacs_result.stdout"
 
-    #Xiaomi MIOT Integration
-    - name: Rename old Xiaomi Miot ZIP if it exists
-      ansible.builtin.command:
-        cmd: "mv /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
-      args:
-        removes: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-      ignore_errors: true
+    # #Xiaomi MIOT Integration
+    # - name: Rename old Xiaomi Miot ZIP if it exists
+    #   ansible.builtin.command:
+    #     cmd: "mv /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
+    #   args:
+    #     removes: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+    #   ignore_errors: true
 
-    - name: Download Xiaomi Miot integration ZIP
-      ansible.builtin.get_url:
-        url: "https://ghrp.hacs.vip/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip"
-        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-        mode: '0644'
-        force: true  # Always download the latest version even if the file exists
-      register: download_result
+    # - name: Download Xiaomi Miot integration ZIP
+    #   ansible.builtin.get_url:
+    #     url: "https://ghrp.hacs.vip/al-one/hass-xiaomi-miot/releases/latest/download/xiaomi_miot.zip"
+    #     dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+    #     mode: '0644'
+    #     force: true  # Always download the latest version even if the file exists
+    #   register: download_result
 
-    - name: Compare new and old Xiaomi Miot ZIP files 
-      ansible.builtin.shell: |
-        if [ -f /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip ]; then 
-          diff /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip
-        else
-          exit 1
-        fi
-      register: zip_diff_result
-      changed_when: zip_diff_result.rc != 0
-      ignore_errors: true
+    # - name: Compare new and old Xiaomi Miot ZIP files 
+    #   ansible.builtin.shell: |
+    #     if [ -f /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip ]; then 
+    #       diff /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip /home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip
+    #     else
+    #       exit 1
+    #     fi
+    #   register: zip_diff_result
+    #   changed_when: zip_diff_result.rc != 0
+    #   ignore_errors: true
 
-    - name: Remove old Xiaomi Miot integration if ZIP changed
-      ansible.builtin.file:
-        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
-        state: absent
-      when: zip_diff_result.changed
+    # - name: Remove old Xiaomi Miot integration if ZIP changed
+    #   ansible.builtin.file:
+    #     path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
+    #     state: absent
+    #   when: zip_diff_result.changed
 
-    - name: Extract new Xiaomi Miot integration if ZIP changed
-      ansible.builtin.unarchive:
-        src: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
-        dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
-        remote_src: true
-        extra_opts: [--strip-components=1]
-      when: zip_diff_result.changed
+    # - name: Extract new Xiaomi Miot integration if ZIP changed
+    #   ansible.builtin.unarchive:
+    #     src: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot.zip"
+    #     dest: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot"
+    #     remote_src: true
+    #     extra_opts: ["-o"]
+    #   when: zip_diff_result.changed
 
-    - name: Cleanup old Xiaomi Miot ZIP file
-      ansible.builtin.file:
-        path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
-        state: absent
+    # - name: Cleanup old Xiaomi Miot ZIP file
+    #   ansible.builtin.file:
+    #     path: "/home/{{ ansible_user }}/homeAssistant/custom_components/xiaomi_miot_old.zip"
+    #     state: absent

@@ -13,7 +13,7 @@
   gather_facts: true
   roles:
     - setupSSH
-    - updateAndInstallPackages
+    - upgradeAndInstallPackages
     - preventRfkillFromBlockingWifi
     - configureUserEnvironment
     - setupDocker

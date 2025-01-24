@@ -4,6 +4,9 @@
   become: false
   block:
 
+    # - name: Apply new group in current session
+    #   ansible.builtin.shell: "newgrp docker"
+
     - name: Use docker compose up
       ansible.builtin.shell: "docker compose --env-file .env up -d"
       args:
