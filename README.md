@@ -42,6 +42,8 @@ A working Raspberry Pi or Linux server using the `apt` package manager. Home Ass
   sudo systemctl enable ssh && sudo systemctl start ssh
   ```
 
+<br>
+
 ### 2. Ansible Control Machine
 Another server where ansible will be installed
 
