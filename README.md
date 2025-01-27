@@ -140,6 +140,9 @@ To access the home assistant web UI, connect to port 8123 of the home assistant 
 #### Xiaomi Miot Auto
 - To add xiaomi miot integration, access the home assistant web UI > `HACS` > search `Xiaomi Miot Auto` > `DOWNLOAD` > follow prompt to restart home assistant > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `Xiaomi Miot Auto` > Follow the process for further setup.
 
+#### Localtuya
+- To add Localtuya integration, access the home assistant web UI > `HACS` > search `Localtuya` > `DOWNLOAD` > follow prompt to restart home assistant > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `LocalTuya integration` > 
+For further information on how to configure devices, refer to the `README.md` file in Localtuya found in HACS. 
 
 
 <br><br><br>
