@@ -50,7 +50,7 @@
     - name: Ensure mosquitto.conf file exists
       ansible.builtin.file:
         path: "/home/{{ ansible_user }}/mosquitto/config/mosquitto.conf"
-        state: "touch"  # This creates an empty file if it doesn't exist
+        state: file  # This creates an empty file if it doesn't exist
         mode: "0644"
 
     # NodeRed Files & Directories
