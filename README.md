@@ -137,6 +137,10 @@ To access the home assistant web UI, connect to port 8123 of the home assistant 
 #### HACS
 - To setup HACs > access the home assistant web UI > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `HACS` > Follow the link to github for authorization.
 
+#### Node-RED
+- To setup nodered > access the nodered web UI (`http://[ip-address]:1880`) > Go to `Manage Palette` on the right-hand menu > Search for and install `node-red-contrib-home-assistant-websocket` > go to home assistant web UI to generate a long term access key (store it!) > back in nodered web UI, add server through any home assistant node; you will need the access key and the `hostname:port` (docker DNS name: http://homeAssistant:8123).
+You may now make configurations in nodered and customize automations, scenes, and triggers.
+
 #### Xiaomi Miot Auto
 - To add xiaomi miot integration, access the home assistant web UI > `HACS` > search `Xiaomi Miot Auto` > `DOWNLOAD` > follow prompt to restart home assistant > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `Xiaomi Miot Auto` > Follow the process for further setup.
 
