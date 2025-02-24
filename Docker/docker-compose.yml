@@ -71,21 +71,20 @@ services:
     networks:
       - ha-network
 
-  # HAVING SOME ISSUES, COMMENTED OUT FOR THE TIME-BEING
-  # mariadb: # RDBMS - Better performance and scalability than SQLite. Initialization tasks are performed as root within the container
-  #   container_name: mariadb-HA
-  #   image: ${MARIADB_IMAGE}
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-  #     - MYSQL_DATABASE=homeAssistant
-  #     - MYSQL_USER=homeAssistant
-  #     - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-  #   volumes:
-  #     - /etc/localtime:/etc/localtime:ro
-  #     - /home/${USER}/mariadb:/var/lib/mysql
-  #   ports:
-  #     - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
-  #   restart: unless-stopped
+  mariadb: # RDBMS - Better performance and scalability than SQLite. Initialization tasks are performed as root within the container
+    container_name: mariadb-HA
+    image: ${MARIADB_IMAGE}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=homeAssistant
+      - MYSQL_USER=homeAssistant
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /home/${USER}/mariadb:/var/lib/mysql
+    ports:
+      - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
+    restart: unless-stopped
 
   samba: # File sharing tool to share files via SMB/CIFS protocol.
     container_name: samba-HA

@@ -151,7 +151,11 @@ For further information on how to configure devices, refer to the `README.md` fi
 
 <br><br><br>
 
+## TROUBLESHOOTING / COMMON ERRORS
+- Sometimes a virtual network interface will be assigned as the default route in the routing table, this disables outbound internet access for the device. This could be caused by `connman`. One way of solving such an issue is by disabling `connman` and switching to a different network manager, others have also found success through blacklisting certain interfaces in `/etc/connman/main.conf` file.
 
+
+<br><br>
 
 ## BRIEF ANSIBLE PLAYBOOK EXPLANATION:
 
