@@ -56,11 +56,12 @@ Another server where ansible will be installed
      ```
   2. Install Python package manager:  
      ```bash
-     sudo apt install python3-pip
+     sudo apt install pipx python3-venv
+     pipx ensurepath
      ```
   3. Install Ansible via pip:  
      ```bash
-     pip install ansible
+     pipx install ansible
      ```
   4. Install Ansible Docker collections:  
      ```bash
