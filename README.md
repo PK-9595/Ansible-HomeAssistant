@@ -62,9 +62,10 @@ Another server where ansible will be installed
      ```bash
      pip install ansible
      ```
-  4. Install the Ansible Docker collection:  
+  4. Install Ansible Docker collections:  
      ```bash
      ansible-galaxy collection install community.docker
+     ansible-galaxy collection install community.general
      ```
   5. Install Git:  
      ```bash
