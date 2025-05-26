@@ -70,3 +70,14 @@
         name: xrdp
         enabled: true
         state: started
+
+    - name: Install TailScale
+      ansible.builtin.shell: "curl -fsSL https://tailscale.com/install.sh | sh"
+      args:
+        executable: /bin/bash
+    
+    - name: Enable TailScale
+      ansible.builtin.systemd:
+        name: tailscaled
+        enabled: true
+        state: started
