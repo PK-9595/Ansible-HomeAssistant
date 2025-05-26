@@ -1,6 +1,7 @@
 # Ansible Home Assistant Automation
 
 This project provides an automated way to set up and maintain **Home Assistant Core** on a Raspberry Pi or Ubuntu Linux server using **Ansible**. It helps automate provisioning and updating tasks, ensuring a streamlined setup experience.
+*(Note: Home Assistant does not include free remote access by default. This playbook provides an easy alternative by automatically installing Tailscale for secure remote connectivity.)*
 
 ## Features
 - Easy-to-use playbook for provisioning and updates.
@@ -85,7 +86,7 @@ Another server where ansible will be installed
      ```bash
      ssh-add <privKeyFilePath>
      ```
-  4. Copy the public key to the Home Assistant server's authorized_keys file:  
+  4. Copy the public key to the authorized_keys file on the server running Home Assistant:  
      ```bash
      ssh-copy-id -i <pubKeyFilePath> <username>@<hostName>
      ```
@@ -99,7 +100,7 @@ Another server where ansible will be installed
 
 
 ## HOME ASSISTANT SETUP VIA ANSIBLE:
-1. Clone this repository to the ansible control machine:  
+1. On the ansible control machine, clone this repository:  
     ```bash
     git clone git@github.com:PK-9595/Ansible-HomeAssistant.git
     ```
@@ -116,7 +117,7 @@ Another server where ansible will be installed
     vim .env
     ```
     *Feel free to use any editor of your choice*
-5. Load the desired variables in the `.env` file and run the ansible playbook through the script:
+5. Run the below command to load the desired variables in the `.env` file and run the ansible playbook:
     ```bash
     source load_env.sh
     ```
@@ -131,7 +132,7 @@ Another server where ansible will be installed
 ### HOME ASSISTANT WEB UI USAGE:
 To access the home assistant web UI, connect to port 8123 of the home assistant server on any web browser of any device connected to the same local network.
 
-### ADD-ONS SET UP:
+### ADD-ONS / ADDITIONAL SET UP:
 
 #### Mosquitto Broker
 - To connect to the mosquitto broker (no longer supported via YAML) > access the home assistant web UI > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `MQTT` > Enter Broker as `mosquitto-HA` and port as `1883`.
@@ -142,6 +143,18 @@ To access the home assistant web UI, connect to port 8123 of the home assistant 
 #### Node-RED
 - To setup nodered > access the nodered web UI (`http://[ip-address]:1880`) > Go to `Manage Palette` on the right-hand menu > Search for and install `node-red-contrib-home-assistant-websocket` > go to home assistant web UI to generate a long term access key (store it!) > back in nodered web UI, add server through any home assistant node; you will need the access key and the `hostname:port` (docker DNS name: http://homeAssistant:8123).
 You may now make configurations in nodered and customize automations, scenes, and triggers.
+
+#### Tailscale
+- [Download](https://tailscale.com/download) and sign in to [Tailscale](https://login.tailscale.com) on your other devices (all using the same account).
+- Setup Tailscale on the device running home assistant:
+   1. On your ansible control machine, SSH into the device running home assistant:
+      ```
+      source .env
+      ssh -i ${SSH_PRIV_KEY} ${USER}@${SERVER_HOSTNAME}
+      sudo tailscale up
+      ```
+   2. Copy the URL shown and open it in a browser of one of your devices that has already been connected to Tailscale for authenticated.
+- From the tailscale admin panel, your Home Assistant server will appear in your tailnet and can be accessed remotely using its Tailscale IP or MagicDNS name (e.g. `http://<hostname>.ts.net:8123`).
 
 #### Xiaomi Miot Auto
 - To add xiaomi miot integration, access the home assistant web UI > `HACS` > search `Xiaomi Miot Auto` > `DOWNLOAD` > follow prompt to restart home assistant > `Settings` > `Devices & Services` > `ADD INTEGRATION` > `Xiaomi Miot Auto` > Follow the process for further setup.
