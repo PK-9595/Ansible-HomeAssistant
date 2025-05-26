@@ -119,7 +119,7 @@ Another server where ansible will be installed
     *Feel free to use any editor of your choice*
 5. Run the below command to load the desired variables in the `.env` file and run the ansible playbook:
     ```bash
-    source load_env.sh
+    source deploy.sh
     ```
     *This step can be done repeatedly as and when needed to update home assistant*
 
