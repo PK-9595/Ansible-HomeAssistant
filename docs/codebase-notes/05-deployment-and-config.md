@@ -19,6 +19,7 @@ Evidence: `README.md` setup instructions; `deploy.sh`.
 - Database credentials: `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`.
 - Container image variables for Home Assistant, Zigbee2MQTT, Mosquitto, Node-RED, ESPHome, MariaDB, and Samba.
 - Hardware path: `ZIGBEE_DONGLE`.
+- Optional `PORT_BIND_IP` and host-port variables for Home Assistant, Zigbee2MQTT, Mosquitto, Node-RED, ESPHome, MariaDB, and Samba. Defaults match the original all-interface Docker port publishing behavior, and users can set `PORT_BIND_IP` to a local host IP to bind those ports only on that interface.
 
 Evidence: `.env.example`; `Ansible/inventory`; `Docker/docker-compose.yml`.
 

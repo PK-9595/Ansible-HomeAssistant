@@ -12,13 +12,14 @@ Evidence: `Docker/docker-compose.yml`; `Ansible/roles/upgradeAndInstallPackages/
 
 ## Container Services
 
-- Home Assistant: web UI exposed on port `8123`.
-- Zigbee2MQTT: web UI exposed on port `8080`, Zigbee device passed through from `ZIGBEE_DONGLE`.
-- Mosquitto: MQTT exposed on ports `1883` and `9001`.
-- Node-RED: web UI exposed on port `1880`.
-- ESPHome: web UI exposed on port `6052`.
-- MariaDB: database service exposed on port `3306`.
-- Samba: SMB/CIFS exposed on ports `139` and `445`.
+- Home Assistant: web UI exposed through `HOMEASSISTANT_HOST_PORT`, defaulting to port `8123`.
+- Zigbee2MQTT: web UI exposed through `ZIGBEE2MQTT_HOST_PORT`, defaulting to port `8080`, with Zigbee device passed through from `ZIGBEE_DONGLE`.
+- Mosquitto: MQTT exposed through `MOSQUITTO_MQTT_HOST_PORT`, defaulting to port `1883`; WebSocket MQTT exposed through `MOSQUITTO_WEBSOCKET_HOST_PORT`, defaulting to port `9001`.
+- Node-RED: web UI exposed through `NODERED_HOST_PORT`, defaulting to port `1880`.
+- ESPHome: web UI exposed through `ESPHOME_HOST_PORT`, defaulting to port `6052`.
+- MariaDB: database service exposed through `MARIADB_HOST_PORT`, defaulting to port `3306`.
+- Samba: SMB/CIFS exposed through `SAMBA_NETBIOS_HOST_PORT` and `SAMBA_SMB_HOST_PORT`, defaulting to ports `139` and `445`.
+- Optional `PORT_BIND_IP` can bind these published ports to one local host IP instead of all host interfaces.
 
 Evidence: `Docker/docker-compose.yml` service `ports`, `devices`, and volume entries.
 

@@ -10,7 +10,7 @@ services:
     privileged: true
     restart: unless-stopped
     ports:
-      - 8123:8123
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${HOMEASSISTANT_HOST_PORT:-8123}:8123"
     networks:
       - ha-network 
 
@@ -18,7 +18,7 @@ services:
     container_name: zigbee2mqtt-HA
     image: ${ZIGBEE2MQTT_IMAGE}
     ports:
-      - 8080:8080
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${ZIGBEE2MQTT_HOST_PORT:-8080}:8080"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/zigbee2mqtt/data:/app/data
@@ -33,8 +33,8 @@ services:
     container_name: mosquitto-HA
     image: ${MOSQUITTO_IMAGE}
     ports:
-      - "1883:1883" # Forward port 1883 on the host to port 1883 on the container.
-      - "9001:9001" # Forward port 9001 on the host to port 9001 on the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${MOSQUITTO_MQTT_HOST_PORT:-1883}:1883" # Forward MQTT on the host to the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${MOSQUITTO_WEBSOCKET_HOST_PORT:-9001}:9001" # Forward WebSocket MQTT on the host to the container.
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/mosquitto/config:/mosquitto/config
@@ -49,7 +49,7 @@ services:
     container_name: nodered-HA
     image: ${NODERED_IMAGE}
     ports:
-      - "1880:1880" # Forward port 1880 on the host to port 1880 on the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${NODERED_HOST_PORT:-1880}:1880" # Forward Node-RED on the host to the container.
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/nodered:/data
@@ -62,7 +62,7 @@ services:
     container_name: esphome-HA
     image: ${ESPHOME_IMAGE}
     ports:
-      - "6052:6052" # Forward port 6052 on the host to port 6052 on the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${ESPHOME_HOST_PORT:-6052}:6052" # Forward ESPHome on the host to the container.
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/esphome:/config
@@ -83,7 +83,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /home/${USER}/mariadb:/var/lib/mysql
     ports:
-      - "3306:3306" # Forward port 3306 on the host to port 3306 on the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${MARIADB_HOST_PORT:-3306}:3306" # Forward MariaDB on the host to the container.
     restart: unless-stopped
 
   samba: # File sharing tool to share files via SMB/CIFS protocol.
@@ -97,8 +97,8 @@ services:
       - /home/${USER}/homeAssistant:/share:ro # Shares the homeAssistant /config directory via the browser UI. Read-Only.
     privileged: true
     ports:
-      - "139:139" # Forward port 139 on the host to port 139 on the container.
-      - "445:445" # Forward port 445 on the host to port 445 on the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${SAMBA_NETBIOS_HOST_PORT:-139}:139" # Forward NetBIOS on the host to the container.
+      - "${PORT_BIND_IP:+${PORT_BIND_IP}:}${SAMBA_SMB_HOST_PORT:-445}:445" # Forward SMB on the host to the container.
     restart: unless-stopped
     networks:
       - ha-network

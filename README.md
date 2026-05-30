@@ -117,6 +117,13 @@ Another server where ansible will be installed
     vim .env
     ```
     *Feel free to use any editor of your choice*
+
+    Optional: to expose published container ports only on one network interface, set `PORT_BIND_IP` to a local IP address assigned to the Raspberry Pi. For example:
+    ```bash
+    PORT_BIND_IP=100.x.y.z
+    ```
+    Leave `PORT_BIND_IP` empty to keep the default behavior of exposing the ports on all host interfaces. Use an IP address assigned to the Raspberry Pi; hostnames are not recommended for Docker port binding.
+
 5. Run the below command to load the desired variables in the `.env` file and run the ansible playbook:
     ```bash
     source deploy.sh

@@ -30,9 +30,9 @@ Evidence: `Ansible/roles/setupSSH/tasks/main.yml`; `Ansible/roles/upgradeAndInst
 
 ## Docker Compose And Networking
 
-MariaDB exposes its database port and does not explicitly attach to `ha-network` in the current Compose file. Other services expose UI or protocol ports on the host. Network exposure expectations are not documented in Compose.
+MariaDB exposes its database port by default and does not explicitly attach to `ha-network` in the current Compose file. Services expose UI or protocol ports on the host by default. The Compose file supports optional host-port variables and a shared `PORT_BIND_IP` that can bind published ports to one local host IP, but the defaults preserve broad host-interface exposure.
 
-Evidence: `Docker/docker-compose.yml`.
+Evidence: `Docker/docker-compose.yml`; `.env.example`.
 
 ## Validation Coverage
 
