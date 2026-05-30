@@ -1,0 +1,61 @@
+---
+- name: Back up Home Assistant config
+  hosts: all
+  any_errors_fatal: true
+  gather_facts: false
+  vars:
+    home_dir: "/home/{{ ansible_user }}"
+  tasks:
+    - name: Create timestamp for backup
+      ansible.builtin.command: date +%Y-%m-%d_%H-%M-%S
+      register: backup_timestamp
+      changed_when: false
+
+    - name: Check Home Assistant config directory exists
+      ansible.builtin.stat:
+        path: "{{ home_dir }}/homeAssistant"
+      register: ha_config_dir
+
+    - name: Fail if Home Assistant config directory is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ home_dir }}/homeAssistant on the target host."
+      when: not ha_config_dir.stat.isdir | default(false)
+
+    - name: Stop Home Assistant, create backup, and restart it
+      block:
+        - name: Stop Home Assistant container
+          ansible.builtin.command:
+            cmd: docker compose --env-file .env stop homeassistant
+            chdir: "{{ home_dir }}"
+          changed_when: true
+
+        - name: Create Home Assistant config backup
+          become: true
+          ansible.builtin.command:
+            argv:
+              - tar
+              - -czf
+              - "homeAssistant-backup-before-update-{{ backup_timestamp.stdout }}.tar.gz"
+              - homeAssistant
+            chdir: "{{ home_dir }}"
+          changed_when: true
+
+        - name: Ensure backup archive is owned by deployment user
+          become: true
+          ansible.builtin.file:
+            path: "{{ home_dir }}/homeAssistant-backup-before-update-{{ backup_timestamp.stdout }}.tar.gz"
+            owner: "{{ ansible_user }}"
+            group: "{{ ansible_user }}"
+            mode: "0600"
+
+      always:
+        - name: Start Home Assistant container
+          ansible.builtin.command:
+            cmd: docker compose --env-file .env start homeassistant
+            chdir: "{{ home_dir }}"
+          changed_when: true
+          failed_when: false
+
+    - name: Print backup path
+      ansible.builtin.debug:
+        msg: "Backup created: {{ home_dir }}/homeAssistant-backup-before-update-{{ backup_timestamp.stdout }}.tar.gz"

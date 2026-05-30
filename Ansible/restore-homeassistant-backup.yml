@@ -1,0 +1,83 @@
+---
+- name: Restore Home Assistant config backup
+  hosts: all
+  any_errors_fatal: true
+  gather_facts: false
+  vars:
+    home_dir: "/home/{{ ansible_user }}"
+  tasks:
+    - name: Ensure backup file was provided
+      ansible.builtin.assert:
+        that:
+          - homeassistant_backup_file is defined
+          - homeassistant_backup_file | length > 0
+        fail_msg: "Provide homeassistant_backup_file."
+
+    - name: Resolve backup path
+      ansible.builtin.set_fact:
+        resolved_backup_file: >-
+          {{ homeassistant_backup_file if homeassistant_backup_file.startswith('/') else home_dir + '/' + homeassistant_backup_file }}
+
+    - name: Check backup file exists
+      ansible.builtin.stat:
+        path: "{{ resolved_backup_file }}"
+      register: backup_file
+
+    - name: Fail if backup file is missing
+      ansible.builtin.fail:
+        msg: "Missing backup file on target host: {{ resolved_backup_file }}"
+      when: not backup_file.stat.exists
+
+    - name: Check current Home Assistant config directory exists
+      ansible.builtin.stat:
+        path: "{{ home_dir }}/homeAssistant"
+      register: ha_config_dir
+
+    - name: Fail if current Home Assistant config directory is missing
+      ansible.builtin.fail:
+        msg: "Missing {{ home_dir }}/homeAssistant on the target host."
+      when: not ha_config_dir.stat.isdir | default(false)
+
+    - name: Create timestamp for preserved config directory
+      ansible.builtin.command: date +%Y-%m-%d_%H-%M-%S
+      register: rollback_timestamp
+      changed_when: false
+
+    - name: Stop Docker Compose stack
+      ansible.builtin.command:
+        cmd: docker compose --env-file .env down
+        chdir: "{{ home_dir }}"
+      changed_when: true
+
+    - name: Preserve current Home Assistant config directory
+      become: true
+      ansible.builtin.command:
+        cmd: "mv homeAssistant homeAssistant-before-rollback-{{ rollback_timestamp.stdout }}"
+        chdir: "{{ home_dir }}"
+      args:
+        creates: "{{ home_dir }}/homeAssistant-before-rollback-{{ rollback_timestamp.stdout }}"
+      changed_when: true
+
+    - name: Restore selected Home Assistant config backup
+      become: true
+      ansible.builtin.command:
+        argv:
+          - tar
+          - -xzf
+          - "{{ resolved_backup_file }}"
+        chdir: "{{ home_dir }}"
+      changed_when: true
+
+    - name: Ensure restored config directory is owned by deployment user
+      become: true
+      ansible.builtin.file:
+        path: "{{ home_dir }}/homeAssistant"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        recurse: true
+
+    - name: Print restore result
+      ansible.builtin.debug:
+        msg:
+          - "Restored backup: {{ resolved_backup_file }}"
+          - "Previous config preserved at: {{ home_dir }}/homeAssistant-before-rollback-{{ rollback_timestamp.stdout }}"

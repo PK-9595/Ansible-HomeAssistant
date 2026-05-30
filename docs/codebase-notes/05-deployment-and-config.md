@@ -1,14 +1,24 @@
 # Deployment And Config
 
-Last verified against codebase: 2026-05-30
+Last verified against codebase: 2026-05-31
 
 ## Deployment Entry Point
 
 Confidence: High
 
-The documented deployment command is `source deploy.sh` from the repository root. The script exports `.env` values and invokes `ansible-playbook` with `Ansible/inventory` and `Ansible/playbook.yml`.
+The documented deployment command is `source deploy.sh` from the repository root. The script sources `.env`, exports its values, and invokes `ansible-playbook` with `Ansible/inventory` and `Ansible/playbook.yml`.
 
 Evidence: `README.md` setup instructions; `deploy.sh`.
+
+## Home Assistant Image Maintenance
+
+`update-ha.sh` pins `HOMEASSISTANT_IMAGE` in local `.env`, exports environment variables, runs `Ansible/backup-homeassistant.yml` to create a timestamped backup of the remote `homeAssistant` config directory, and then sources `deploy.sh` to apply the requested image through the normal deployment flow.
+
+`rollback-ha.sh` pins `HOMEASSISTANT_IMAGE` in local `.env`, runs `Ansible/restore-homeassistant-backup.yml` to stop the remote Docker Compose stack, preserve the current remote `homeAssistant` directory under a timestamped `homeAssistant-before-rollback-*` name, and extract the selected backup, then sources `deploy.sh` to re-apply the normal deployment flow.
+
+The backup and restore playbooks use privilege escalation for archive and restore operations because some Home Assistant config files can be owned by root or otherwise unreadable by the deployment user.
+
+Evidence: `update-ha.sh`; `rollback-ha.sh`; `Ansible/backup-homeassistant.yml`; `Ansible/restore-homeassistant-backup.yml`; `deploy.sh`; `README.md`.
 
 ## Required Configuration
 

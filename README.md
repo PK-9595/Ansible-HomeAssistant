@@ -130,6 +130,24 @@ Another server where ansible will be installed
     ```
     *This step can be done repeatedly as and when needed to update home assistant*
 
+### Home Assistant image updates and rollback
+
+For controlled Home Assistant Core updates, pass the target version to the update script instead of editing `.env` by hand:
+
+```bash
+./update-ha.sh 2025.2.5
+```
+
+The update script pins `HOMEASSISTANT_IMAGE` in the local `.env`, runs `Ansible/backup-homeassistant.yml` to create a timestamped backup of the remote `homeAssistant` config directory, and then runs `deploy.sh` to apply the requested image through the normal Ansible deployment flow.
+
+To roll back, pass the remote backup file name and the Home Assistant version to restore:
+
+```bash
+./rollback-ha.sh homeAssistant-backup-before-update-2026-05-31_00-35-54.tar.gz 2025.1.4
+```
+
+Rollback pins `HOMEASSISTANT_IMAGE` in the local `.env`, runs `Ansible/restore-homeassistant-backup.yml` to stop the remote stack, preserve the current remote `homeAssistant` directory under a timestamped `homeAssistant-before-rollback-*` name, and extract the selected backup, then runs `deploy.sh`.
+
 
 <br>
 
