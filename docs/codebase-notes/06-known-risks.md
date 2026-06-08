@@ -1,6 +1,6 @@
 # Known Risks
 
-Last verified against codebase: 2026-05-30
+Last verified against codebase: 2026-06-08
 
 ## Platform Support
 
@@ -27,6 +27,14 @@ Evidence: `Ansible/roles/upgradeAndInstallPackages/tasks/main.yml` Tailscale tas
 The playbook changes SSH authentication settings, apt packages, Docker group membership, xrdp service state, Tailscale service state, user shell, and `/etc/rc.local` when present. These changes affect host security and login behavior.
 
 Evidence: `Ansible/roles/setupSSH/tasks/main.yml`; `Ansible/roles/upgradeAndInstallPackages/tasks/main.yml`; `Ansible/roles/setupDocker/tasks/main.yml`; `Ansible/roles/configureUserEnvironment/tasks/main.yml`; `Ansible/roles/preventRfkillFromBlockingWifi/tasks/main.yml`.
+
+## Host Network Manager And Default Route
+
+The package setup role installs `network-manager`, and the README troubleshooting section records a known failure mode where a virtual network interface can become the host default route and disable outbound internet access. The README specifically calls out `connman` as a possible cause and notes two manual remediation paths: disable `connman` and use another network manager, or blacklist problematic interfaces in `/etc/connman/main.conf`.
+
+The playbook does not currently disable `connman`, edit `/etc/connman/main.conf`, or validate the target host default route. If the target loses outbound connectivity, inspect the routing table and active network manager state on the host before assuming Docker, Tailscale, or Home Assistant container configuration is the root cause.
+
+Evidence: `README.md` troubleshooting section; `Ansible/roles/upgradeAndInstallPackages/tasks/main.yml` network-manager task.
 
 ## Docker Compose And Networking
 
